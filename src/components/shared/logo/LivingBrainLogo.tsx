@@ -45,12 +45,14 @@ export default function LivingBrainLogo({
     <div className={`living-brain-logo ${className}`} style={style}>
       <img className="living-brain-logo__base" src={src} alt={alt} draggable={false} />
       {animationEnabled && (
-        <svg
-          className="living-brain-logo__overlay"
-          viewBox="0 0 2103 748"
-          preserveAspectRatio="xMidYMid meet"
-          aria-hidden="true"
-        >
+        
+<svg
+  className="living-brain-logo__overlay"
+  viewBox="0 0 2103 748"
+  preserveAspectRatio="none"
+  aria-hidden="true"
+>
+
           <defs>
             {/* Clip masks constrain light to the icon, never the wordmark. */}
             <clipPath id={`${uid}-brain`}>

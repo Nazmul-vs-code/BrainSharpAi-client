@@ -1,10 +1,13 @@
-import LivingBrainLogo from "@/components/shared/LivingBrainLogo";
+import LivingBrainLogo from "@/components/shared/logo/LivingBrainLogo";
+import GridPulseBackground from "@/components/ui/GridPulseBackground";
 
 export default function Home() {
   return (
-    
-    <div className="flex items-center p-20">
-      <LivingBrainLogo/>
-    </div>
+    <>
+      <GridPulseBackground />
+      <div className="flex items-center p-20">
+        {/* <LivingBrainLogo/> */}
+      </div>
+    </>
   );
 }

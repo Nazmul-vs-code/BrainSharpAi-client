@@ -2,37 +2,49 @@
 @import "@heroui/styles";
 
 @theme {
+  --font-sans: var(--font-space-grotesk);
+  --font-display: var(--font-orbitron);
+
   --color-primary: #8df5bd;
   --color-primary-foreground: #09090b;
+  --color-brand-orange: #ff6b00;
+  --color-brand-orange-soft: #ffa24c;
+  --color-brand-green: #8df5bd;
 }
 
 :root {
   --background: #09090b;
   --foreground: #fafafa;
+
   --color-background: #09090b;
   --color-foreground: #fafafa;
+
   --primary: #8df5bd;
   --color-primary: #8df5bd;
+
   --border: rgba(255, 255, 255, 0.12);
   --color-border: rgba(255, 255, 255, 0.12);
-  --font-sans: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 [data-theme="light"] {
   --background: #ffffff;
   --foreground: #09090b;
+
   --color-background: #ffffff;
   --color-foreground: #09090b;
+
   --primary: #10b981;
   --color-primary: #10b981;
+
   --border: rgba(0, 0, 0, 0.1);
   --color-border: rgba(0, 0, 0, 0.1);
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-sans), sans-serif;
   color: var(--foreground);
   background-color: var(--background);
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -41,6 +53,14 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   min-height: 100vh;
+}
+
+/* Futuristic typography */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), sans-serif;
 }
 
 /* Reusable sharp-corner shape */
@@ -61,10 +81,15 @@ body {
     filter: brightness(1) drop-shadow(0 0 10px #8df5bd);
     transform: scaleX(1);
   }
+
   35% {
-    filter: brightness(1.7) drop-shadow(0 0 25px #8df5bd) drop-shadow(0 0 45px #8df5bd);
+    filter:
+      brightness(1.7)
+      drop-shadow(0 0 25px #8df5bd)
+      drop-shadow(0 0 45px #8df5bd);
     transform: scaleX(1.05) scaleY(1.4);
   }
+
   100% {
     filter: brightness(1) drop-shadow(0 0 12px #8df5bd);
     transform: scaleX(1);

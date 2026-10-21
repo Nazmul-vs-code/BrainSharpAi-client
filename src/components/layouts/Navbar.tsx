@@ -11,21 +11,26 @@ import {
   Sparkles,
   Info,
   Menu,
+  Trophy,
   X,
 } from "lucide-react";
 import LivingBrainLogo from "../shared/logo/LivingBrainLogo";
 import { LimelightNav } from "../ui/LimelightNav";
+import SoundSettings from "./SoundSettings";
+import { useSound } from "@/components/providers/SoundProvider";
 
 const navigation = [
   { label: "Home", href: "/", icon: House },
-  { label: "Workspace", href: "/workspace", icon: BrainCircuit },
-  { label: "Features", href: "/features", icon: Sparkles },
+  { label: "BrainSharp AI", href: "/brainsharp-ai", icon: Sparkles },
+  { label: "The Quest", href: "/quest", icon: BrainCircuit },
+  { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { label: "About", href: "/about", icon: Info },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { playSound } = useSound();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -54,7 +59,11 @@ export default function Navbar() {
           href="/"
           className="group flex shrink-0 items-center transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
           aria-label="BrainSharp AI home"
-          onClick={closeMenu}
+          onClick={() => {
+            playSound("navigation", 0.7);
+            closeMenu();
+          }}
+          onMouseEnter={() => playSound("hover", 0.25)}
         >
           <LivingBrainLogo width={160} />
         </Link>
@@ -68,15 +77,18 @@ export default function Navbar() {
           />
         </div>
 
-        {/* Right Actions with tactile click and animated arrow */}
-        <div className="flex items-center gap-3">
+        {/* Right Actions: Sound Settings, CTA with tactile click and animated arrow */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Global Sound Settings Popover */}
+          <SoundSettings />
+
           <Link
-            href="/workspace"
-            className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-zinc-950 shadow-sm shadow-white/10 hover:shadow-md hover:shadow-white/20 hover:scale-[1.03] hover:bg-zinc-100 active:scale-[0.96] active:translate-y-[1px] transition-all duration-200"
+            href="/SignUp"
+            className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-zinc-950 shadow-sm shadow-white/10 hover:shadow-md hover:shadow-white/20 hover:scale-[1.03] hover:bg-zinc-100 active:scale-[0.96] active:translate-y-[1px] transition-all duration-200"
           >
-            <span>Get started</span>
+            <span>SignUp</span>
             <ArrowUpRight
-              size={16}
+              size={15}
               className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
             />
           </Link>
@@ -88,7 +100,10 @@ export default function Navbar() {
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
             aria-controls="navbar-mobile-menu"
-            onPress={() => setMobileOpen((open) => !open)}
+            onPress={() => {
+              playSound(mobileOpen ? "close" : "open", 0.7);
+              setMobileOpen((open) => !open);
+            }}
             className="md:hidden border-white/10 text-white hover:bg-white/10 hover:scale-105 active:scale-95 transition-all duration-150"
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -110,7 +125,10 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   aria-current={isActive(item.href) ? "page" : undefined}
-                  onClick={closeMenu}
+                  onClick={() => {
+                    playSound("navigation", 0.7);
+                    closeMenu();
+                  }}
                   className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-all duration-200 hover:translate-x-1.5 active:scale-[0.98] ${
                     isActive(item.href)
                       ? "bg-primary/10 text-primary font-semibold"
@@ -130,7 +148,10 @@ export default function Navbar() {
 
             <Link
               href="/workspace"
-              onClick={closeMenu}
+              onClick={() => {
+                playSound("click");
+                closeMenu();
+              }}
               className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 shadow-sm hover:bg-zinc-100 hover:scale-[1.02] active:scale-[0.97] transition-all duration-200"
             >
               <span>Get started</span>

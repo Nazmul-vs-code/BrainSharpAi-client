@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Space_Grotesk, Orbitron } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layouts/Navbar";
+import { SoundProvider } from "@/components/providers/SoundProvider";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
-  weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -22,11 +29,13 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="dark"
-      className={`${plusJakarta.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${orbitron.variable} h-full antialiased`}
     >
       <body className="neural-background min-h-full flex flex-col font-sans">
-        <Navbar />
-        {children}
+        <SoundProvider>
+          <Navbar />
+          {children}
+        </SoundProvider>
       </body>
     </html>
   );

@@ -1,13 +1,11 @@
-import LivingBrainLogo from "@/components/shared/logo/LivingBrainLogo";
 import GridPulseBackground from "@/components/ui/GridPulseBackground";
+import BrainSharpHero from "@/components/sections/BrainSharpHero";
 
 export default function Home() {
   return (
-    <>
+    <main className="relative flex min-h-[calc(100vh-64px)] flex-col">
       <GridPulseBackground />
-      <div className="flex items-center p-20">
-        {/* <LivingBrainLogo/> */}
-      </div>
-    </>
+      <BrainSharpHero />
+    </main>
   );
 }

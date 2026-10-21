@@ -9,6 +9,7 @@ import React, {
   useCallback,
 } from "react";
 import Link from "next/link";
+import { useSound } from "@/components/providers/SoundProvider";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -46,6 +47,7 @@ export const LimelightNav = ({
   iconContainerClassName = "",
   iconClassName = "",
 }: LimelightNavProps) => {
+  const { playSound } = useSound();
   const [internalActiveIndex, setInternalActiveIndex] = useState(defaultActiveIndex);
   const activeIndex = activeIndexProp !== undefined ? activeIndexProp : internalActiveIndex;
   const [isReady, setIsReady] = useState(false);
@@ -91,6 +93,7 @@ export const LimelightNav = ({
   }
 
   const handleItemClick = (index: number, itemOnClick?: () => void) => {
+    playSound("navigation", 0.75);
     setInternalActiveIndex(index);
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 450);

@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, LockKeyhole, LogIn, Mail } from "lucide-react";
+import toast from "react-hot-toast";
+import { ArrowRight, Loader2, LockKeyhole, LogIn, Mail } from "lucide-react";
 import {
   Button,
   FieldError,
@@ -13,10 +15,41 @@ import {
   Label,
   TextField,
 } from "@heroui/react";
+import { authClient } from "@/lib/auth-client"; // Safe standalone client import
 
 export default function LoginPage() {
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const { data, error } = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: "/",
+      });
+
+      if (error) {
+        toast.error(error.message || "Invalid email or password. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Signed in successfully! Welcome back.");
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error("An unexpected error occurred. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -130,17 +163,24 @@ export default function LoginPage() {
               >
                 <Button
                   type="submit"
-                  className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white font-semibold text-black shadow-lg transition-colors hover:bg-neutral-200"
+                  isDisabled={loading}
+                  className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white font-semibold text-black shadow-lg transition-colors hover:bg-neutral-200 disabled:opacity-70"
                 >
-                  <LogIn size={17} />
-                  Sign in
-                  <motion.span
-                    aria-hidden="true"
-                    animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1 }}
-                  >
-                    <ArrowRight size={18} />
-                  </motion.span>
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-black" />
+                  ) : (
+                    <>
+                      <LogIn size={17} />
+                      Sign in
+                      <motion.span
+                        aria-hidden="true"
+                        animate={{ x: [0, 3, 0] }}
+                        transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1 }}
+                      >
+                        <ArrowRight size={18} />
+                      </motion.span>
+                    </>
+                  )}
                 </Button>
               </motion.div>
             </Form>

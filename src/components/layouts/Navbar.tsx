@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Button } from "@heroui/react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { Button, Avatar } from "@heroui/react";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import {
   ArrowUpRight,
   House,
@@ -13,11 +15,15 @@ import {
   Menu,
   Trophy,
   X,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import LivingBrainLogo from "../shared/logo/LivingBrainLogo";
 import { LimelightNav } from "../ui/LimelightNav";
 import SoundSettings from "./SoundSettings";
 import { useSound } from "@/components/providers/SoundProvider";
+import { authClient, useSession } from "@/lib/auth-client";
+// import { useSession, signOut } from "@/lib/auth-client"; // Better Auth hooks
 
 const navigation = [
   { label: "Home", href: "/", icon: House },
@@ -29,8 +35,44 @@ const navigation = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
   const { playSound } = useSound();
+  const { data: session, isPending } = useSession(); // Fetch authentication session
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+
+    // console.log(session, ' : Session in navbar!!')
+
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            toast.success("Signed out successfully");
+            setDropdownOpen(false);
+            router.push("/login");
+          },
+        },
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+      toast.error("Failed to sign out");
+    }
+  };
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -47,6 +89,19 @@ export default function Navbar() {
   }));
 
   const closeMenu = () => setMobileOpen(false);
+
+  // Get user initials for avatar fallback
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  
 
   return (
     <header
@@ -77,21 +132,94 @@ export default function Navbar() {
           />
         </div>
 
-        {/* Right Actions: Sound Settings, CTA with tactile click and animated arrow */}
+        {/* Right Actions: Sound Settings, Auth State */}
         <div className="flex items-center gap-2.5 sm:gap-3">
           {/* Global Sound Settings Popover */}
           <SoundSettings />
 
-          <Link
-            href="/SignUp"
-            className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-zinc-950 shadow-sm shadow-white/10 hover:shadow-md hover:shadow-white/20 hover:scale-[1.03] hover:bg-zinc-100 active:scale-[0.96] active:translate-y-[1px] transition-all duration-200"
-          >
-            <span>SignUp</span>
-            <ArrowUpRight
-              size={15}
-              className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            />
-          </Link>
+          {!isPending && (
+            session?.user ? (
+              /* Logged In: Avatar with Animated Dropdown Menu */
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => {
+                    playSound("click", 0.5);
+                    setDropdownOpen((prev) => !prev);
+                  }}
+                  className="flex items-center gap-2 rounded-full ring-offset-black transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  aria-label="User menu"
+                >
+                  <Avatar className="cursor-pointer border border-orange-500/40">
+                    <Avatar.Image
+                      alt={session.user.name || "User"}
+                      src={session.user.image || undefined}
+                    />
+                    <Avatar.Fallback className="bg-orange-500/20 text-orange-400 font-semibold text-xs">
+                      {getInitials(session.user.name)}
+                    </Avatar.Fallback>
+                  </Avatar>
+                </button>
+
+                <AnimatePresence>
+                  {dropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute right-0 mt-3 w-56 rounded-2xl border border-neutral-800 bg-neutral-950/95 p-2 shadow-2xl backdrop-blur-2xl"
+                    >
+                      {/* User Info Header */}
+                      <div className="border-b border-neutral-800/80 px-3 py-2.5">
+                        <p className="text-xs font-semibold text-white truncate">
+                          {session.user.name}
+                        </p>
+                        <p className="text-[11px] text-neutral-400 truncate">
+                          {session.user.email}
+                        </p>
+                      </div>
+
+                      {/* Dropdown Options */}
+                      <div className="py-1">
+                        <Link
+                          href="/settings"
+                          onClick={() => setDropdownOpen(false)}
+                          className="group flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-neutral-300 transition-colors hover:bg-white/5 hover:text-white"
+                        >
+                          <span>Settings</span>
+                          <motion.div whileHover={{ rotate: 90 }} transition={{ duration: 0.3 }}>
+                            <Settings size={15} className="text-neutral-400 group-hover:text-orange-400 transition-colors" />
+                          </motion.div>
+                        </Link>
+                      </div>
+
+                      <div className="border-t border-neutral-800/80 pt-1">
+                        <button
+                          onClick={handleLogout}
+                          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                        >
+                          <span>Sign out</span>
+                          <LogOut size={15} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              /* Logged Out: Signup Button */
+              <Link
+                href="/SignUp"
+                className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-zinc-950 shadow-sm shadow-white/10 hover:shadow-md hover:shadow-white/20 hover:scale-[1.03] hover:bg-zinc-100 active:scale-[0.96] active:translate-y-[1px] transition-all duration-200"
+              >
+                <span>SignUp</span>
+                <ArrowUpRight
+                  size={15}
+                  className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                />
+              </Link>
+            )
+          )}
 
           <Button
             isIconOnly
@@ -146,17 +274,30 @@ export default function Navbar() {
               );
             })}
 
-            <Link
-              href="/workspace"
-              onClick={() => {
-                playSound("click");
-                closeMenu();
-              }}
-              className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 shadow-sm hover:bg-zinc-100 hover:scale-[1.02] active:scale-[0.97] transition-all duration-200"
-            >
-              <span>Get started</span>
-              <ArrowUpRight size={16} />
-            </Link>
+            {!session?.user ? (
+              <Link
+                href="/SignUp"
+                onClick={() => {
+                  playSound("click");
+                  closeMenu();
+                }}
+                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 shadow-sm hover:bg-zinc-100 hover:scale-[1.02] active:scale-[0.97] transition-all duration-200"
+              >
+                <span>SignUp</span>
+                <ArrowUpRight size={16} />
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  handleLogout();
+                  closeMenu();
+                }}
+                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 shadow-sm hover:bg-red-500/20 transition-all duration-200"
+              >
+                <span>Sign out</span>
+                <LogOut size={16} />
+              </button>
+            )}
           </nav>
         </div>
       )}

@@ -1,12 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 import {
   ArrowRight,
   Image as ImageIcon,
+  Loader2,
   LockKeyhole,
   Mail,
   UserRound,
@@ -20,19 +23,44 @@ import {
   Label,
   TextField,
 } from "@heroui/react";
+import { signUp } from "@/lib/auth-client";
 
 export default function SignUpPage() {
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const data: Record<string, string> = {};
+    const fullName = formData.get("fullName") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const avatarUrl = formData.get("avatarUrl") as string;
 
-    formData.forEach((value, key) => {
-      data[key] = value.toString();
-    });
+    try {
+      const { data, error } = await signUp.email({
+        email,
+        password,
+        name: fullName,
+        image: avatarUrl || undefined,
+        callbackURL: "/",
+      });
 
-    console.log("Form submitted with:", data);
+      if (error) {
+        toast.error(error.message || "Failed to create account. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Account created successfully! Welcome to BrainSharp.ai");
+      router.push("/");
+    } catch (err) {
+      console.error("Signup error:", err);
+      toast.error("An unexpected error occurred. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -170,7 +198,7 @@ export default function SignUpPage() {
                 </TextField>
               </motion.div>
 
-              {/* HeroUI submit button */}
+              {/* HeroUI submit button with loading state */}
               <motion.div
                 className="mt-2"
                 whileHover={{ scale: 1.02 }}
@@ -181,17 +209,24 @@ export default function SignUpPage() {
               >
                 <Button
                   type="submit"
-                  className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white font-semibold text-black shadow-lg transition-colors hover:bg-neutral-200"
+                  isDisabled={loading}
+                  className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white font-semibold text-black shadow-lg transition-colors hover:bg-neutral-200 disabled:opacity-70"
                 >
-                  <UserRoundPlus size={17} />
-                  Create account
-                  <motion.span
-                    aria-hidden="true"
-                    animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1 }}
-                  >
-                    <ArrowRight size={18} />
-                  </motion.span>
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-black" />
+                  ) : (
+                    <>
+                      <UserRoundPlus size={17} />
+                      Create account
+                      <motion.span
+                        aria-hidden="true"
+                        animate={{ x: [0, 3, 0] }}
+                        transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 1 }}
+                      >
+                        <ArrowRight size={18} />
+                      </motion.span>
+                    </>
+                  )}
                 </Button>
               </motion.div>
             </Form>

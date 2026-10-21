@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "@/components/layouts/Navbar";
 import { SoundProvider } from "@/components/providers/SoundProvider";
 
+import { Toaster } from 'react-hot-toast'
+
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -32,6 +34,12 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${orbitron.variable} h-full antialiased`}
     >
       <body className="neural-background min-h-full flex flex-col font-sans">
+        
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+        />
+
         <SoundProvider>
           <Navbar />
           {children}

@@ -1,57 +1,26 @@
-const API_BASE_URL = 
-  process.env.NEXT_PUBLIC_SERVER_URL || "https://brainsharp-backend.onrender.com";
+import { requestApi, type ApiResponse } from "@/lib/api/request";
 
 type HttpMethod = "POST" | "PUT" | "DELETE" | "PATCH";
 
 interface ActionOptions {
   method?: HttpMethod;
-  body?: any;
+  body?: unknown;
   headers?: Record<string, string>;
-  token?: string; // Optional session token passed dynamically
+  token?: string;
 }
 
-export async function ActionReq<T = any>(
-  endpoint: string, 
-  options: ActionOptions
-): Promise<{ data?: T; error?: string; status: number }> {
-  try {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const method = options.method || "POST";
+export async function ActionReq<T = unknown>(
+  endpoint: string,
+  options: ActionOptions,
+): Promise<ApiResponse<T>> {
+  const headers = new Headers(options.headers);
+  headers.set("accept", "application/json");
+  if (options.body !== undefined) headers.set("content-type", "application/json");
+  if (options.token) headers.set("authorization", `Bearer ${options.token}`);
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    };
-
-    // Attach token if passed as a parameter
-    if (options?.token) {
-      headers["Authorization"] = `Bearer ${options.token}`;
-    }
-
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      return {
-        error: result.message || "Action request failed",
-        status: response.status,
-      };
-    }
-
-    return {
-      data: result,
-      status: response.status,
-    };
-  } catch (err: any) {
-    console.error("ActionReq Error:", err);
-    return {
-      error: err.message || "Network error occurred",
-      status: 500,
-    };
-  }
+  return requestApi<T>(endpoint, {
+    method: options.method || "POST",
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
 }

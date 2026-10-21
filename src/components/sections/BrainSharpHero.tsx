@@ -61,7 +61,7 @@ const defaultPhrases = [
  * Hovering any individual card gives it upper index (z-50), scale, and straightens rotate.
  */
 function HeroImageShowcase({ cards = defaultCards }: { cards?: HeroCardItem[] }) {
-  // const { playSound } = useSound();
+  const { playSound } = useSound();
   const [isContainerHovered, setIsContainerHovered] = useState(false);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
@@ -132,7 +132,7 @@ function HeroImageShowcase({ cards = defaultCards }: { cards?: HeroCardItem[] })
             ? cfg.baseZ + 5
             : cfg.baseZ;
 
-          let currentX = isContainerHovered ? cfg.spreadX : cfg.initialX;
+          const currentX = isContainerHovered ? cfg.spreadX : cfg.initialX;
           let currentY = isContainerHovered ? cfg.spreadY : cfg.initialY;
           let currentRotate = isContainerHovered ? cfg.spreadRotate : cfg.initialRotate;
           let currentScale = 1;
@@ -323,8 +323,10 @@ export default function BrainSharpHero({
             setCurrentText(currentPhrase.slice(0, currentText.length - 1));
           }, 28);
         } else {
-          setIsDeleting(false);
-          setPhraseIdx((prev) => (prev + 1) % typingPhrases.length);
+          timer = setTimeout(() => {
+            setIsDeleting(false);
+            setPhraseIdx((prev) => (prev + 1) % typingPhrases.length);
+          }, 0);
         }
       }
     }
@@ -411,7 +413,7 @@ export default function BrainSharpHero({
               transition={{ duration: 0.45, delay: 0.18 }}
               className="mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-white font-normal"
             >
-              A mindful sanctuary uniting{" "}
+              {description}{" "}
               <span className="text-[#ffa24c] font-medium">guided meditation</span>,{" "}
               <span className="text-[#8df5bd] font-medium">daily physical exercise</span>, and{" "}
               <span className="text-white font-medium">cognitive puzzles</span> to help you{" "}

@@ -62,6 +62,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
                 : DEFAULT_SOUND_SETTINGS.categories.typing,
           },
         };
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore browser-only preferences after hydration.
         setSettings(merged);
         soundEngine.updateSettings(merged);
       }

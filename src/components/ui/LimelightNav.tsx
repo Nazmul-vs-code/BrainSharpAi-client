@@ -16,7 +16,7 @@ const useIsomorphicLayoutEffect =
 
 export type NavItem = {
   id: string | number;
-  icon: React.ReactElement<any>;
+  icon: React.ReactElement<{ className?: string }>;
   label?: string;
   href?: string;
   onClick?: () => void;
@@ -115,7 +115,7 @@ export const LimelightNav = ({
                 isActive
                   ? "scale-110 opacity-100 text-[#8df5bd] drop-shadow-[0_0_8px_rgba(141,245,189,0.8)]"
                   : "opacity-45 text-zinc-400 group-hover:text-emerald-300 group-hover:opacity-100 group-hover:scale-125 group-hover:-translate-y-0.5 group-hover:-rotate-6"
-              } group-active:scale-90 group-active:rotate-0 ${(icon.props as any)?.className || ""} ${iconClassName}`,
+              } group-active:scale-90 group-active:rotate-0 ${icon.props.className || ""} ${iconClassName}`,
             })}
 
             {/* Nav Label with subtle text hover & click dynamics */}

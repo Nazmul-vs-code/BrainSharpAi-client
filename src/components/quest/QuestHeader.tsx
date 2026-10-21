@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Flame, Sparkles, Trophy, ArrowRight } from "lucide-react";
+import { Flame, Sparkles, Trophy } from "lucide-react";
 
 interface QuestHeaderProps {
   level: number;
@@ -11,9 +11,6 @@ interface QuestHeaderProps {
 }
 
 export default function QuestHeader({ level, xp, streak, name }: QuestHeaderProps) {
-  const currentLevelXp = xp % 20;
-  const progressPercentage = (currentLevelXp / 20) * 100;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -20, scale: 0.98 }}
@@ -48,10 +45,16 @@ export default function QuestHeader({ level, xp, streak, name }: QuestHeaderProp
             className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3.5 py-1 text-xs font-semibold text-orange-400 mb-3 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
           >
             <Sparkles size={13} className="animate-spin" />
-            Daily Challenge Active
+            Your Daily Quests
           </motion.div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-            Welcome back, <span className="bg-gradient-to-r from-orange-400 to-amber-200 bg-clip-text text-transparent">{name || "Explorer"}</span> 👋
+            {name ? (
+              <>
+                Welcome back, <span className="bg-gradient-to-r from-orange-400 to-amber-200 bg-clip-text text-transparent">{name}</span> 👋
+              </>
+            ) : (
+              "Your progress"
+            )}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-neutral-400 max-w-xl">
             Complete your daily micro-habits to sharpen your mind, boost your cognitive flow, and level up.
@@ -59,7 +62,7 @@ export default function QuestHeader({ level, xp, streak, name }: QuestHeaderProp
         </div>
 
         {/* Stats Badges */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           {/* Streak Badge with Burning Fire Animation */}
           <motion.div
             whileHover={{ scale: 1.05 }}
@@ -110,33 +113,9 @@ export default function QuestHeader({ level, xp, streak, name }: QuestHeaderProp
         </div>
       </div>
 
-      {/* XP Progress Bar */}
       <div className="mt-8 border-t border-white/10 pt-6">
-        <div className="flex items-center justify-between text-xs font-semibold text-neutral-300 mb-2.5">
-          <span className="flex items-center gap-1.5">
-            <span>Level {level}</span>
-            <ArrowRight size={14} className="text-orange-400" />
-            <span>Level {level + 1}</span>
-          </span>
-          <span className="text-orange-400 font-mono font-bold bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20 shadow-[0_0_10px_rgba(249,115,22,0.2)]">
-            {currentLevelXp} / 20 XP
-          </span>
-        </div>
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-neutral-900 border border-white/10 p-0.5">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercentage}%` }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-300 rounded-full shadow-[0_0_20px_rgba(249,115,22,0.8)] relative"
-          >
-            {/* Shimmer light effect inside progress bar */}
-            <motion.div
-              animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
-            />
-          </motion.div>
-        </div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">Total XP</p>
+        <p className="mt-1 font-mono text-2xl font-bold text-orange-400">{xp} XP</p>
       </div>
     </motion.div>
   );

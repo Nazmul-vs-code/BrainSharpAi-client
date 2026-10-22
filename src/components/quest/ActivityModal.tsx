@@ -13,7 +13,7 @@ import {
   FaVolumeUp,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
-import type { Quest } from "@/types/quest";
+import type { Quest, QuestId } from "@/types/quest";
 import { startRainAmbience } from "@/lib/audio/rainAmbience";
 import { useSound } from "@/components/providers/SoundProvider";
 
@@ -21,7 +21,7 @@ interface ActivityModalProps {
   quest: Quest | null;
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (quest: Quest) => Promise<boolean>;
+  onComplete: (questId: QuestId, durationSpentMinutes: number) => Promise<boolean>;
 }
 
 export default function ActivityModal({ quest, isOpen, onClose, onComplete }: ActivityModalProps) {
@@ -33,6 +33,9 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
     },
   });
   const [timeLeft, setTimeLeft] = useState(() => quest ? quest.durationMinutes * 60 : 0);
+  const [durationSpentMinutes, setDurationSpentMinutes] = useState(
+    () => quest?.durationMinutes ?? 0,
+  );
   const [isRunning, setIsRunning] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,7 +78,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      if (await onComplete(quest)) modalState.close();
+      if (await onComplete(quest.id, durationSpentMinutes)) modalState.close();
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +187,10 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
                   </Button>
                   <Button
                     variant="outline"
-                    onPress={() => setTimeLeft((remaining) => remaining + 5 * 60)}
+                    onPress={() => {
+                      setTimeLeft((remaining) => remaining + 5 * 60);
+                      setDurationSpentMinutes((minutes) => minutes + 5);
+                    }}
                     className="h-12 gap-2 rounded-2xl border-neutral-700 px-4 text-neutral-300 hover:bg-white/10"
                   >
                     <FaPlus aria-hidden="true" />

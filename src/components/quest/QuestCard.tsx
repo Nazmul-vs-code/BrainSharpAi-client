@@ -70,21 +70,22 @@ export default function QuestCard({ quest, isCompleted, canStart, onStartActivit
             <span>{quest.durationMinutes} minutes</span>
           </div>
 
-          {isCompleted ? (
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-300">
-              <FaCheckCircle aria-hidden="true" />
-              Completed
-            </span>
-          ) : (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {isCompleted && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300">
+                <FaCheckCircle aria-hidden="true" />
+                Completed
+              </span>
+            )}
             <Button
               onPress={() => onStartActivity(quest)}
               isDisabled={!canStart}
               className="group flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-black shadow-md transition-all hover:bg-neutral-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FaPlay aria-hidden="true" className="transition-transform group-hover:scale-110" />
-              <span>{canStart ? "Start Activity" : "Syncing..."}</span>
+              <span>{canStart ? (isCompleted ? "Do more & get XP" : "Start Activity") : "Syncing..."}</span>
             </Button>
-          )}
+          </div>
         </Card.Footer>
       </Card>
     </motion.div>

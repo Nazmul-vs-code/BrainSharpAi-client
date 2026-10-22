@@ -8,9 +8,16 @@ interface QuestHeaderProps {
   xp: number;
   streak: number;
   name: string;
+  productiveEnoughProgress?: number;
 }
 
-export default function QuestHeader({ level, xp, streak, name }: QuestHeaderProps) {
+export default function QuestHeader({
+  level,
+  xp,
+  streak,
+  name,
+  productiveEnoughProgress,
+}: QuestHeaderProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -20, scale: 0.98 }}
@@ -117,6 +124,27 @@ export default function QuestHeader({ level, xp, streak, name }: QuestHeaderProp
         <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">Total XP</p>
         <p className="mt-1 font-mono text-2xl font-bold text-orange-400">{xp} XP</p>
       </div>
+      {productiveEnoughProgress !== undefined && (
+        <div className="mt-5 max-w-md">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <p className="font-semibold text-neutral-200">Productive Enough</p>
+            <p className="text-neutral-400">{productiveEnoughProgress}/30 days</p>
+          </div>
+          <div
+            className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-800"
+            role="progressbar"
+            aria-label="Productive Enough badge progress"
+            aria-valuemin={0}
+            aria-valuemax={30}
+            aria-valuenow={productiveEnoughProgress}
+          >
+            <div
+              className="h-full rounded-full bg-emerald-400 transition-[width]"
+              style={{ width: `${(productiveEnoughProgress / 30) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

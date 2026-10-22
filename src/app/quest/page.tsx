@@ -8,8 +8,7 @@ import { useSession } from "@/lib/auth-client";
 import QuestHeader from "@/components/quest/QuestHeader";
 import QuestCard from "@/components/quest/QuestCard";
 import ActivityModal from "@/components/quest/ActivityModal";
-import type { Quest, UserProfile } from "@/types/quest";
-import { QUEST_OPTIONS } from "@/components/quest/questOptions";
+import type { Quest, QuestId, UserProfile } from "@/types/quest";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import { FaBolt } from "react-icons/fa";
@@ -29,6 +28,62 @@ function unwrapResponse(value: unknown): unknown {
     current = nested;
   }
   return current;
+}
+
+export function calculateTrueStreak(completionDates: string[]): number {
+  const uniqueDates = [...new Set(
+    completionDates
+      .map((timestamp) => {
+        const date = new Date(timestamp);
+        return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+      })
+      .filter((date): date is string => date !== null),
+  )].sort((left, right) => right.localeCompare(left));
+
+  if (uniqueDates.length === 0) return 0;
+
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const latestDate = Date.parse(`${uniqueDates[0]}T00:00:00.000Z`);
+  const daysSinceLatest = (todayUtc - latestDate) / 86_400_000;
+  if (daysSinceLatest < 0 || daysSinceLatest > 1) return 0;
+
+  let streak = 1;
+  for (let index = 1; index < uniqueDates.length; index += 1) {
+    const newerDate = Date.parse(`${uniqueDates[index - 1]}T00:00:00.000Z`);
+    const olderDate = Date.parse(`${uniqueDates[index]}T00:00:00.000Z`);
+    if (newerDate - olderDate !== 86_400_000) break;
+    streak += 1;
+  }
+
+  return streak;
+}
+
+function readCompletionDates(value: unknown): string[] | null {
+  const payload = unwrapResponse(value);
+  const completionDates: string[] = [];
+  let foundCompletionLogs = false;
+
+  function visit(item: unknown, inCompletionCollection = false): void {
+    if (Array.isArray(item)) {
+      item.forEach((entry) => visit(entry, inCompletionCollection));
+      return;
+    }
+    if (!isRecord(item)) return;
+
+    if (inCompletionCollection && typeof item.createdAt === "string") {
+      completionDates.push(item.createdAt);
+    }
+
+    for (const [key, nested] of Object.entries(item)) {
+      const isCompletionCollection = /completion|session|activity|quest.?log|history/i.test(key);
+      if (isCompletionCollection) foundCompletionLogs = true;
+      visit(nested, inCompletionCollection || isCompletionCollection);
+    }
+  }
+
+  visit(payload);
+  return foundCompletionLogs ? completionDates : null;
 }
 
 function readQuestList(value: unknown): Quest[] {
@@ -91,7 +146,76 @@ function readProfile(value: unknown, fallbackName: string | null): UserProfile |
     xp: payload.xp,
     level: payload.level,
     streakCount,
+    productiveEnoughProgress: readProductiveEnoughProgress(payload),
   };
+}
+
+function readProductiveEnoughProgress(profile: ApiRecord): number | undefined {
+  const directProgress = profile.productiveEnoughProgress ?? profile.productiveEnoughDays;
+  if (typeof directProgress === "number" && Number.isFinite(directProgress)) {
+    return Math.min(30, Math.max(0, directProgress));
+  }
+
+  const badgeProgress = profile.badgeProgress;
+  if (isRecord(badgeProgress)) {
+    const progress = badgeProgress.productiveEnough ?? badgeProgress["productive-enough"];
+    const value = typeof progress === "number"
+      ? progress
+      : isRecord(progress)
+        ? progress.progress ?? progress.days ?? progress.current
+        : undefined;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return Math.min(30, Math.max(0, value));
+    }
+  }
+
+  if (Array.isArray(profile.badges)) {
+    for (const badge of profile.badges) {
+      if (!isRecord(badge)) continue;
+      const badgeName = [badge.id, badge.name, badge.title]
+        .find((value): value is string => typeof value === "string")
+        ?.toLowerCase()
+        .replace(/[^a-z]/g, "");
+      if (badgeName !== "productiveenough") continue;
+
+      const value = badge.progress ?? badge.days ?? badge.currentProgress;
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return Math.min(30, Math.max(0, value));
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function readXpEarned(value: unknown): number | null {
+  const payload = unwrapResponse(value);
+  if (!isRecord(payload)) return null;
+  const xpEarned = payload.xpEarned;
+  return typeof xpEarned === "number" && Number.isFinite(xpEarned) ? xpEarned : null;
+}
+
+function readCompletionProfileUpdates(value: unknown): Partial<UserProfile> {
+  let payload = unwrapResponse(value);
+  if (isRecord(payload) && isRecord(payload.profile)) payload = payload.profile;
+  else if (isRecord(payload) && isRecord(payload.user)) payload = payload.user;
+  if (!isRecord(payload)) return {};
+
+  const updates: Partial<UserProfile> = {};
+  const xp = typeof payload.xp === "number"
+    ? payload.xp
+    : typeof payload.totalXp === "number"
+      ? payload.totalXp
+      : undefined;
+  const streakCount = typeof payload.streakCount === "number"
+    ? payload.streakCount
+    : typeof payload.streak === "number"
+      ? payload.streak
+      : undefined;
+  if (xp !== undefined) updates.xp = xp;
+  if (typeof payload.level === "number") updates.level = payload.level;
+  if (streakCount !== undefined) updates.streakCount = streakCount;
+  return updates;
 }
 
 function readCompletedQuestTitles(value: unknown): string[] {
@@ -119,7 +243,7 @@ export default function QuestPage() {
   const { data: session, isPending: isSessionPending } = useSession();
   const userId = session?.user?.id;
   const userName = session?.user?.name ?? null;
-  const [quests, setQuests] = useState<Quest[]>(QUEST_OPTIONS);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [completedQuestTitles, setCompletedQuestTitles] = useState<Set<string>>(new Set());
   const [questSyncStatus, setQuestSyncStatus] = useState<"loading" | "ready" | "unavailable">("loading");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -158,7 +282,7 @@ export default function QuestPage() {
 
       if (questResponse.error || questResponse.data === undefined) {
         setQuestError(questResponse.error || "Quest service is unavailable.");
-        setQuests(QUEST_OPTIONS);
+        setQuests([]);
         setCompletedQuestTitles(new Set());
         setQuestSyncStatus("unavailable");
       } else {
@@ -170,14 +294,14 @@ export default function QuestPage() {
             setCompletedQuestTitles(new Set(readCompletedQuestTitles(todayQuestResponse.data)));
             setQuestSyncStatus("ready");
           } else {
-            setQuests(QUEST_OPTIONS);
-            setQuestError("Quest options are waiting to sync with the database.");
+            setQuests([]);
+            setQuestError("No quests are currently available.");
             setQuestSyncStatus("unavailable");
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : "Unable to read quests.";
           setQuestError(message);
-          setQuests(QUEST_OPTIONS);
+          setQuests([]);
           setCompletedQuestTitles(new Set());
           setQuestSyncStatus("unavailable");
         }
@@ -191,7 +315,13 @@ export default function QuestPage() {
       } else {
         const profile = readProfile(profileResponse.data, userName);
         if (profile) {
-          setUserProfile(profile);
+          const completionDates = readCompletionDates(profileResponse.data);
+          setUserProfile({
+            ...profile,
+            streakCount: completionDates === null
+              ? profile.streakCount
+              : calculateTrueStreak(completionDates),
+          });
           setProfileError(null);
         } else {
           const message = "The profile response did not contain XP, level, and streak data.";
@@ -208,18 +338,23 @@ export default function QuestPage() {
     };
   }, [isSessionPending, userId, userName]);
 
-  const handleCompleteQuest = useCallback(async (quest: Quest): Promise<boolean> => {
+  const handleCompleteQuest = useCallback(async (
+    questId: QuestId,
+    durationSpentMinutes: number,
+  ): Promise<boolean> => {
     if (!userId) {
       toast.error("Please sign in to complete a quest.");
       return false;
     }
-    if (typeof quest.id !== "number" || questSyncStatus !== "ready") {
+    const quest = quests.find((candidate) => candidate.id === questId);
+    if (!quest || typeof questId !== "number" || questSyncStatus !== "ready") {
       toast.error("This quest is still syncing with the database. Please try again shortly.");
       return false;
     }
 
     const key = quest.title;
-    if (completedQuestTitles.has(key) || completingQuestTitles.has(key)) return false;
+    const wasCompleted = completedQuestTitles.has(key);
+    if (completingQuestTitles.has(key)) return false;
 
     setCompletingQuestTitles((current) => new Set(current).add(key));
     setCompletedQuestTitles((current) => new Set(current).add(key));
@@ -228,16 +363,19 @@ export default function QuestPage() {
       method: "POST",
       body: {
         userId,
-        questId: quest.id,
+        questId,
+        durationSpentMinutes,
       },
     });
 
     if (response.error || response.data === undefined) {
-      setCompletedQuestTitles((current) => {
-        const next = new Set(current);
-        next.delete(key);
-        return next;
-      });
+      if (!wasCompleted) {
+        setCompletedQuestTitles((current) => {
+          const next = new Set(current);
+          next.delete(key);
+          return next;
+        });
+      }
       toast.error(response.error || "Unable to complete this quest.");
       setCompletingQuestTitles((current) => {
         const next = new Set(current);
@@ -247,10 +385,32 @@ export default function QuestPage() {
       return false;
     }
 
+    const xpEarned = readXpEarned(response.data);
+    const completionProfileUpdates = readCompletionProfileUpdates(response.data);
     const returnedProfile = readProfile(response.data, userName);
+    const completionDates = readCompletionDates(response.data);
     if (returnedProfile) {
-      setUserProfile(returnedProfile);
+      setUserProfile((current) => ({
+        ...current,
+        ...returnedProfile,
+        streakCount: completionDates === null
+          ? returnedProfile.streakCount
+          : calculateTrueStreak(completionDates),
+        productiveEnoughProgress:
+          returnedProfile.productiveEnoughProgress ?? current?.productiveEnoughProgress,
+      }));
     } else {
+      setUserProfile((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          ...completionProfileUpdates,
+          xp: completionProfileUpdates.xp ?? current.xp + (xpEarned ?? 0),
+        };
+      });
+    }
+
+    if (!returnedProfile || completionDates === null) {
       const profileResponse = await FetchData<unknown>(
         `/api/profile/${encodeURIComponent(userId)}`,
       );
@@ -258,11 +418,19 @@ export default function QuestPage() {
         ? readProfile(profileResponse.data, userName)
         : null;
       if (refreshedProfile) {
-        setUserProfile(refreshedProfile);
+        const completionDates = readCompletionDates(profileResponse.data);
+        setUserProfile({
+          ...refreshedProfile,
+          streakCount: completionDates === null
+            ? refreshedProfile.streakCount
+            : calculateTrueStreak(completionDates),
+        });
         setProfileError(null);
       } else {
-        const message = profileResponse.error || "Quest completed, but your profile could not be refreshed.";
-        setProfileError(message);
+        if (!returnedProfile) {
+          const message = profileResponse.error || "Quest completed, but your profile could not be refreshed.";
+          setProfileError(message);
+        }
       }
     }
 
@@ -271,9 +439,9 @@ export default function QuestPage() {
       next.delete(key);
       return next;
     });
-    toast.success("Quest completed!");
+    toast.success(xpEarned === null ? "Quest completed!" : `Quest completed! +${xpEarned} XP`);
     return true;
-  }, [completedQuestTitles, completingQuestTitles, questSyncStatus, userId, userName]);
+  }, [completedQuestTitles, completingQuestTitles, questSyncStatus, quests, userId, userName]);
 
   if (isSessionPending) {
     return (
@@ -309,6 +477,7 @@ export default function QuestPage() {
             xp={userProfile.xp}
             streak={userProfile.streakCount}
             name={userProfile.name || userName || ""}
+            productiveEnoughProgress={userProfile.productiveEnoughProgress}
           />
         )}
         {profileError && (
@@ -329,8 +498,11 @@ export default function QuestPage() {
 
           {questError && (
             <p role="status" className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
-              Showing available quest options. Your completion will sync when the quest service is available.
+              {questError}
             </p>
+          )}
+          {questSyncStatus === "loading" && (
+            <p role="status" className="text-sm text-neutral-400">Loading quests...</p>
           )}
           {(
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

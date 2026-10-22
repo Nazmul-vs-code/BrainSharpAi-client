@@ -15,4 +15,5 @@ export interface UserProfile {
   xp: number;
   level: number;
   streakCount: number;
+  productiveEnoughProgress?: number;
 }

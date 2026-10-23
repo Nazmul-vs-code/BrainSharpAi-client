@@ -168,17 +168,19 @@ export const LimelightNav = ({
         );
       })}
 
-      {/* Adaptive full-width glowing upper line covering text & icon */}
-      <div
-        ref={limelightRef}
-        className={`absolute top-0 z-30 h-[3.5px] rounded-full bg-[#8df5bd] shadow-[0_0_12px_#8df5bd,0_0_24px_rgba(141,245,189,0.7),0_1px_3px_rgba(141,245,189,1)] ${
-          isReady ? "transition-[left,width] duration-300 ease-in-out" : ""
-        } ${isFlashing ? "animate-limelight-flash" : ""} ${limelightClassName}`}
-        style={{ left: "-999px", width: "52px", opacity: 0 }}
-      >
-        {/* Broad spotlight cone showering the entire icon & text in light */}
-        <div className="absolute left-[-15%] top-[3.5px] w-[130%] h-14 [clip-path:polygon(0%_100%,12%_0,88%_0,100%_100%)] bg-gradient-to-b from-[#8df5bd]/35 via-[#8df5bd]/10 to-transparent pointer-events-none" />
-      </div>
+      {activeIndex >= 0 && (
+        /* Adaptive full-width glowing upper line covering text & icon */
+        <div
+          ref={limelightRef}
+          className={`absolute top-0 z-30 h-[3.5px] rounded-full bg-[#8df5bd] shadow-[0_0_12px_#8df5bd,0_0_24px_rgba(141,245,189,0.7),0_1px_3px_rgba(141,245,189,1)] ${
+            isReady ? "transition-[left,width] duration-300 ease-in-out" : ""
+          } ${isFlashing ? "animate-limelight-flash" : ""} ${limelightClassName}`}
+          style={{ left: "-999px", width: "52px", opacity: 0 }}
+        >
+          {/* Broad spotlight cone showering the entire icon & text in light */}
+          <div className="absolute left-[-15%] top-[3.5px] w-[130%] h-14 [clip-path:polygon(0%_100%,12%_0,88%_0,100%_100%)] bg-gradient-to-b from-[#8df5bd]/35 via-[#8df5bd]/10 to-transparent pointer-events-none" />
+        </div>
+      )}
     </nav>
   );
 };

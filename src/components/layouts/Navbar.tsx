@@ -15,6 +15,7 @@ import {
   Menu,
   Trophy,
   X,
+  User,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -23,7 +24,6 @@ import { LimelightNav } from "../ui/LimelightNav";
 import SoundSettings from "./SoundSettings";
 import { useSound } from "@/components/providers/SoundProvider";
 import { authClient, useSession } from "@/lib/auth-client";
-// import { useSession, signOut } from "@/lib/auth-client"; // Better Auth hooks
 
 const navigation = [
   { label: "Home", href: "/", icon: House },
@@ -41,7 +41,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { playSound } = useSound();
-  const { data: session, isPending } = useSession(); // Fetch authentication session
+  const { data: session, isPending } = useSession();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,9 +55,6 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-
-    // console.log(session, ' : Session in navbar!!')
-
     try {
       await authClient.signOut({
         fetchOptions: {
@@ -90,7 +87,6 @@ export default function Navbar() {
 
   const closeMenu = () => setMobileOpen(false);
 
-  // Get user initials for avatar fallback
   const getInitials = (name?: string) => {
     if (!name) return "U";
     return name
@@ -101,15 +97,13 @@ export default function Navbar() {
       .substring(0, 2);
   };
 
-  
-
   return (
     <header
       data-grid-avoid
       className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#050507]/98 shadow-2xl shadow-black/90 backdrop-blur-3xl"
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
-        {/* Brand / Logo with subtle spring hover */}
+        {/* Brand / Logo */}
         <Link
           href="/"
           className="group flex shrink-0 items-center transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
@@ -123,23 +117,22 @@ export default function Navbar() {
           <LivingBrainLogo width={160} />
         </Link>
 
-        {/* Desktop Limelight Navigation */}
+        {/* Desktop Navigation */}
         <div className="hidden md:flex h-16 items-center justify-center">
           <LimelightNav
             items={navItems}
-            activeIndex={activeIndex !== -1 ? activeIndex : 0}
+            activeIndex={activeIndex}
             className="h-16"
           />
         </div>
 
-        {/* Right Actions: Sound Settings, Auth State */}
+        {/* Right Actions */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Global Sound Settings Popover */}
           <SoundSettings />
 
           {!isPending && (
             session?.user ? (
-              /* Logged In: Avatar with Animated Dropdown Menu */
+              /* Logged In Dropdown */
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => {
@@ -169,7 +162,7 @@ export default function Navbar() {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="absolute right-0 mt-3 w-56 rounded-2xl border border-neutral-800 bg-neutral-950/95 p-2 shadow-2xl backdrop-blur-2xl"
                     >
-                      {/* User Info Header */}
+                      {/* User Header */}
                       <div className="border-b border-neutral-800/80 px-3 py-2.5">
                         <p className="text-xs font-semibold text-white truncate">
                           {session.user.name}
@@ -179,20 +172,48 @@ export default function Navbar() {
                         </p>
                       </div>
 
-                      {/* Dropdown Options */}
-                      <div className="py-1">
+                      {/* Menu Options */}
+                      <div className="py-1 space-y-0.5">
+                        {/* Profile Item with Glow & Motion */}
+                        <Link
+                          href="/profile"
+                          onClick={() => setDropdownOpen(false)}
+                          className="group flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-neutral-300 transition-all duration-200 hover:bg-orange-500/10 hover:text-white"
+                        >
+                          <span className="group-hover:translate-x-0.5 transition-transform">
+                            Profile
+                          </span>
+                          <motion.div
+                            whileHover={{ scale: 1.15, rotate: 5 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-neutral-400 group-hover:text-orange-400 group-hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] transition-all"
+                          >
+                            <User size={15} />
+                          </motion.div>
+                        </Link>
+
+                        {/* Settings Item */}
                         <Link
                           href="/settings"
                           onClick={() => setDropdownOpen(false)}
-                          className="group flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-neutral-300 transition-colors hover:bg-white/5 hover:text-white"
+                          className="group flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-neutral-300 transition-all duration-200 hover:bg-white/5 hover:text-white"
                         >
-                          <span>Settings</span>
-                          <motion.div whileHover={{ rotate: 90 }} transition={{ duration: 0.3 }}>
-                            <Settings size={15} className="text-neutral-400 group-hover:text-orange-400 transition-colors" />
+                          <span className="group-hover:translate-x-0.5 transition-transform">
+                            Settings
+                          </span>
+                          <motion.div
+                            whileHover={{ rotate: 90 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Settings
+                              size={15}
+                              className="text-neutral-400 group-hover:text-orange-400 transition-colors"
+                            />
                           </motion.div>
                         </Link>
                       </div>
 
+                      {/* Sign Out Action */}
                       <div className="border-t border-neutral-800/80 pt-1">
                         <button
                           onClick={handleLogout}
@@ -207,7 +228,6 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             ) : (
-              /* Logged Out: Signup Button */
               <Link
                 href="/SignUp"
                 className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-zinc-950 shadow-sm shadow-white/10 hover:shadow-md hover:shadow-white/20 hover:scale-[1.03] hover:bg-zinc-100 active:scale-[0.96] active:translate-y-[1px] transition-all duration-200"
@@ -239,7 +259,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Drawer with smooth item slide & click animations */}
+      {/* Mobile Menu Drawer */}
       {mobileOpen && (
         <div
           id="navbar-mobile-menu"
@@ -273,6 +293,29 @@ export default function Navbar() {
                 </Link>
               );
             })}
+
+            {session?.user && (
+              <Link
+                href="/profile"
+                onClick={() => {
+                  playSound("navigation", 0.7);
+                  closeMenu();
+                }}
+                className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-all duration-200 hover:translate-x-1.5 active:scale-[0.98] ${
+                  isActive("/profile")
+                    ? "bg-orange-500/10 text-orange-400 font-semibold"
+                    : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <User size={18} strokeWidth={1.8} aria-hidden="true" />
+                <span>Profile</span>
+                <ArrowUpRight
+                  size={15}
+                  className="ml-auto opacity-40 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Link>
+            )}
 
             {!session?.user ? (
               <Link

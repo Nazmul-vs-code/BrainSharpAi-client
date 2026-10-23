@@ -16,6 +16,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import ActivityGraph from "@/components/profile/ActivityGraph";
 
 export default function ProfilePage() {
   const { data: session, isPending, refetch } = useSession();
@@ -140,9 +141,9 @@ export default function ProfilePage() {
 
   const memberSince = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      })
+      month: "long",
+      year: "numeric",
+    })
     : "Not available";
 
   return (
@@ -384,11 +385,12 @@ export default function ProfilePage() {
             </div>
           </section>
         </div>
-
-        <footer className="mt-8 border-t pt-6 text-sm opacity-60">
+        <ActivityGraph session={session} />
+        {/* <footer className="mt-8 border-t pt-6 text-sm opacity-60">
           BrainSharp AI
-        </footer>
+        </footer> */}
       </div>
+
     </main>
   );
 }

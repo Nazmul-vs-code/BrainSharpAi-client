@@ -277,7 +277,7 @@ export default function ProfilePage() {
                     placeholder="Enter your name"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    isDisabled={isSaving}
+                    
                   />
                 ) : (
                   <div className="flex min-h-11 items-center rounded-xl border px-3 py-2 text-sm">
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                     placeholder="https://example.com/image.jpg"
                     value={image}
                     onChange={(event) => setImage(event.target.value)}
-                    isDisabled={isSaving}
+                    
                   />
 
                   <p className="mt-2 text-xs opacity-60">
@@ -340,7 +340,7 @@ export default function ProfilePage() {
                   <Button
                     className="bg-white text-black"
                     onPress={handleSave}
-                    isDisabled={isSaving || !hasChanges}
+                    
                   >
                     {isSaving ? (
                       <>
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                   <Button
                     variant="outline"
                     onPress={handleCancel}
-                    isDisabled={isSaving}
+                    
                   >
                     <X size={16} />
                     Cancel

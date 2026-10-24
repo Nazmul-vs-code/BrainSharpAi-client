@@ -27,9 +27,11 @@ export default function LeaderboardPage() {
       
       const res = await FetchData(endpoint);
       if (res.data) {
+        const DataObj = res.data as any
+
         const list = Array.isArray(res.data) 
-          ? res.data 
-          : res.data.leaderboard || res.data.data || [];
+          ? DataObj
+          : DataObj?.leaderboard  || [] ;
         setLeaderboardData(list);
       }
       setLoading(false);

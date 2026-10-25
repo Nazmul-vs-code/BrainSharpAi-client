@@ -100,7 +100,7 @@ export default function Navbar() {
   return (
     <header
       data-grid-avoid
-      className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#050507]/98 shadow-2xl shadow-black/90 backdrop-blur-3xl"
+      className="sticky top-0 z-50 w-full border-b border-orange-500/20 bg-[#050507]/85 shadow-[0_8px_30px_rgba(249,115,22,0.08)] backdrop-blur-xl"
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
         {/* Brand / Logo */}
@@ -230,7 +230,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/SignUp"
-                className="group inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-zinc-950 shadow-sm shadow-white/10 hover:shadow-md hover:shadow-white/20 hover:scale-[1.03] hover:bg-zinc-100 active:scale-[0.96] active:translate-y-[1px] transition-all duration-200"
+                className="group inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 px-3.5 py-2 text-xs font-semibold text-zinc-950 shadow-[0_0_24px_rgba(249,115,22,0.2)] transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_30px_rgba(249,115,22,0.35)] active:translate-y-px active:scale-[0.96] sm:px-4 sm:text-sm"
               >
                 <span>SignUp</span>
                 <ArrowUpRight
@@ -263,7 +263,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div
           id="navbar-mobile-menu"
-          className="border-t border-white/[0.08] bg-[#050507]/98 px-6 py-4 backdrop-blur-2xl md:hidden animate-in fade-in slide-in-from-top-2 duration-200"
+          className="border-t border-orange-500/15 bg-[#050507]/95 px-6 py-4 backdrop-blur-xl md:hidden animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <nav className="flex flex-col gap-1.5" aria-label="Mobile navigation">
             {navigation.map((item) => {
@@ -279,7 +279,7 @@ export default function Navbar() {
                   }}
                   className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-all duration-200 hover:translate-x-1.5 active:scale-[0.98] ${
                     isActive(item.href)
-                      ? "bg-primary/10 text-primary font-semibold"
+                      ? "bg-orange-500/10 text-orange-300 font-semibold"
                       : "text-zinc-300 hover:bg-white/5 hover:text-white"
                   }`}
                 >
@@ -324,7 +324,7 @@ export default function Navbar() {
                   playSound("click");
                   closeMenu();
                 }}
-                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 shadow-sm hover:bg-zinc-100 hover:scale-[1.02] active:scale-[0.97] transition-all duration-200"
+                className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 px-4 py-2.5 text-sm font-semibold text-zinc-950 shadow-[0_0_24px_rgba(249,115,22,0.2)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(249,115,22,0.35)] active:scale-[0.97]"
               >
                 <span>SignUp</span>
                 <ArrowUpRight size={16} />

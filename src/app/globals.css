@@ -1,8 +1,8 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
-@theme {
-  --font-sans: var(--font-space-grotesk);
+@theme inline {
+  --font-sans: var(--font-google-sans);
   --font-display: var(--font-orbitron);
 
   --color-primary: #8df5bd;
@@ -41,7 +41,7 @@
 }
 
 body {
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-google-sans), sans-serif;
   color: var(--foreground);
   background-color: var(--background);
 
@@ -58,7 +58,10 @@ body {
 /* Futuristic typography */
 h1,
 h2,
-h3,
+h3 {
+  font-family: var(--font-google-sans), sans-serif;
+}
+
 .font-display {
   font-family: var(--font-display), sans-serif;
 }

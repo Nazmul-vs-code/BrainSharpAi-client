@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Orbitron } from "next/font/google";
+import { Google_Sans, Orbitron } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layouts/Navbar";
 import { SoundProvider } from "@/components/providers/SoundProvider";
 
 import { Toaster } from 'react-hot-toast'
 
-const spaceGrotesk = Space_Grotesk({
+const googleSans = Google_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-google-sans",
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -31,10 +32,9 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="dark"
-      className={`${spaceGrotesk.variable} ${orbitron.variable} h-full antialiased`}
+      className={`${googleSans.variable} ${orbitron.variable} h-full antialiased`}
     >
-      <body className="neural-background min-h-full flex flex-col font-sans">
-        
+      <body className="flex min-h-screen flex-col bg-[#050507] font-sans text-zinc-100">
         <Toaster
           position="top-center"
           reverseOrder={false}

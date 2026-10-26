@@ -113,7 +113,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
           size="lg"
           className="max-h-[100dvh] min-h-0 w-full overflow-y-auto p-2 sm:p-4"
         >
-          <Modal.Dialog className="my-auto max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-x-hidden overflow-y-auto rounded-3xl border border-neutral-800 bg-neutral-950 text-white shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
+          <Modal.Dialog className="my-auto max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-x-hidden overflow-y-auto rounded-3xl border border-orange-500/20 bg-[#08080a] text-white shadow-[0_24px_90px_rgba(0,0,0,0.7)] sm:max-h-[calc(100dvh-2rem)]">
             <motion.div
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -142,7 +142,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
               <Modal.Body className="relative min-h-0 px-5 pb-5 sm:px-8 sm:pb-8">
                 <div className="my-4 flex justify-center sm:my-6">
                   <div
-                    className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full border-4 border-neutral-800 bg-neutral-900/70 sm:h-44 sm:w-44"
+                    className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full border-4 border-orange-500/30 bg-orange-500/[0.04] shadow-[0_0_28px_rgba(249,115,22,0.08)] sm:h-44 sm:w-44"
                     aria-live="polite"
                     aria-label={`${formatTime(timeLeft)} remaining`}
                   >
@@ -180,7 +180,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Button
                     onPress={() => setIsRunning((running) => !running)}
-                    className="h-12 gap-2 rounded-2xl bg-white px-6 font-semibold text-black hover:bg-neutral-200"
+                    className="h-12 gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 px-6 font-semibold text-black shadow-[0_8px_24px_rgba(249,115,22,0.16)] transition hover:brightness-110"
                   >
                     {isRunning ? <FaPause aria-hidden="true" /> : <FaPlay aria-hidden="true" />}
                     {isRunning ? "Pause timer" : "Start timer"}
@@ -191,7 +191,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
                       setTimeLeft((remaining) => remaining + 5 * 60);
                       setDurationSpentMinutes((minutes) => minutes + 5);
                     }}
-                    className="h-12 gap-2 rounded-2xl border-neutral-700 px-4 text-neutral-300 hover:bg-white/10"
+                    className="h-12 gap-2 rounded-2xl border-orange-500/20 px-4 text-neutral-300 hover:bg-orange-500/10"
                   >
                     <FaPlus aria-hidden="true" />
                     Add 5 min

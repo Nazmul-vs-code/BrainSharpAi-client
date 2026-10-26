@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Bar,
-  BarChart,
+  Area,
+  AreaChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Button } from "@heroui/react";
+import { Modal, useOverlayState } from "@heroui/react";
 import {
   Activity,
+  AlertTriangle,
   Check,
   Clock3,
   Flame,
@@ -20,8 +21,14 @@ import {
   Trophy,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { FetchData } from "@/lib/api/FetchData";
+import {
+  getQuestProgressStatus,
+  type QuestProgressStatus,
+} from "@/lib/quest/questData";
+
+export { getQuestProgressStatus } from "@/lib/quest/questData";
 
 interface ActivityGraphProps {
   session?: {
@@ -45,10 +52,17 @@ interface QuestProgressItem {
   };
 }
 
+type QuestProgressEntry = Omit<QuestProgressItem, "status"> & {
+  status: QuestProgressStatus;
+};
+
 interface ActivityPoint {
   date: string;
-  entries: QuestProgressItem[];
-  [key: string]: string | number | QuestProgressItem[];
+  entries: QuestProgressEntry[];
+  completed: number;
+  pending: number;
+  missed: number;
+  [key: string]: string | number | QuestProgressEntry[];
 }
 
 const categoryColors: Record<string, { chart: string; soft: string; text: string }> = {
@@ -140,14 +154,185 @@ function isActivityPoint(value: unknown): value is ActivityPoint {
   );
 }
 
+interface ActivityChartDotProps {
+  cx?: number;
+  cy?: number;
+  payload?: unknown;
+  color: string;
+  onSelect: (point: ActivityPoint) => void;
+}
+
+function ActivityChartDot({
+  cx,
+  cy,
+  payload,
+  color,
+  onSelect,
+}: ActivityChartDotProps) {
+  if (typeof cx !== "number" || typeof cy !== "number" || !isActivityPoint(payload)) {
+    return null;
+  }
+
+  const selectPoint = () => onSelect(payload);
+
+  return (
+    <g
+      role="button"
+      tabIndex={0}
+      aria-label={`View quest activity for ${formatDate(payload.date)}`}
+      style={{ cursor: "pointer" }}
+      onClick={(event) => {
+        event.stopPropagation();
+        selectPoint();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectPoint();
+        }
+      }}
+    >
+      <circle cx={cx} cy={cy} r={12} fill="transparent" />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={5}
+        fill={color}
+        stroke="#09090b"
+        strokeWidth={2}
+        pointerEvents="none"
+      />
+    </g>
+  );
+}
+
+interface ActivityDetailsModalProps {
+  point: ActivityPoint;
+  selectedCategory: string;
+  onClose: () => void;
+}
+
+function ActivityDetailsModal({
+  point,
+  selectedCategory,
+  onClose,
+}: ActivityDetailsModalProps) {
+  const modalState = useOverlayState({
+    isOpen: true,
+    onOpenChange: (isOpen) => {
+      if (!isOpen) onClose();
+    },
+  });
+  const activityEntries = point.entries.filter(
+    (entry) =>
+      selectedCategory === "all" ||
+      categoryKey(entry.quest.category) === selectedCategory,
+  );
+
+  return (
+    <Modal state={modalState}>
+      <Modal.Backdrop
+        isDismissable
+        className="bg-black/80 p-3 backdrop-blur-sm sm:p-4"
+      >
+        <Modal.Container
+          placement="center"
+          scroll="inside"
+          size="lg"
+          className="max-h-[90dvh] w-full p-2 sm:p-4"
+        >
+          <Modal.Dialog className="w-full max-w-lg overflow-hidden rounded-3xl border border-orange-500/25 bg-neutral-950/95 text-white shadow-[0_24px_80px_rgba(0,0,0,0.75),0_0_32px_rgba(249,115,22,0.12)] backdrop-blur-2xl">
+            <Modal.Header className="flex items-start justify-between gap-4 border-b border-neutral-800 p-5 sm:p-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-300">
+                  Activity details
+                </p>
+                <Modal.Heading className="mt-1 text-xl font-bold text-white">
+                  {formatDate(point.date)}
+                </Modal.Heading>
+                <p className="mt-1 text-xs text-neutral-400">
+                  {activityEntries.length} {activityEntries.length === 1 ? "quest" : "quests"} assigned
+                </p>
+              </div>
+              <Modal.CloseTrigger
+                aria-label="Close activity details"
+                className="rounded-xl border border-neutral-700 bg-neutral-900 p-2 text-neutral-300 transition-colors hover:border-orange-400/50 hover:bg-orange-500/10 hover:text-white"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </Modal.CloseTrigger>
+            </Modal.Header>
+            <Modal.Body className="max-h-[65dvh] space-y-3 overflow-y-auto p-5 sm:p-6">
+              {activityEntries.map((entry) => {
+                const status = entry.status;
+                const statusStyles: Record<QuestProgressStatus, string> = {
+                  completed: "border-orange-500/25 bg-orange-500/10 text-orange-300",
+                  pending: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+                  missed: "border-red-500/30 bg-red-500/10 text-red-300",
+                };
+                const statusLabel =
+                  status === "completed"
+                    ? "Completed"
+                    : status === "missed"
+                      ? "Missed"
+                      : "Pending";
+
+                return (
+                  <article
+                    key={entry.id}
+                    className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <h3 className="min-w-0 flex-1 text-sm font-semibold text-white">
+                        {entry.quest.title}
+                      </h3>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusStyles[status]}`}
+                      >
+                        {status === "completed" ? (
+                          <Check size={12} />
+                        ) : status === "missed" ? (
+                          <AlertTriangle size={12} />
+                        ) : (
+                          <Clock3 size={12} />
+                        )}
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-neutral-400">
+                      {entry.quest.description}
+                    </p>
+                    {status === "missed" && (
+                      <p className="mt-2 text-xs font-medium text-red-300">
+                        This quest was not completed by the end of its assigned day.
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-neutral-800 pt-3 text-[11px] text-neutral-300">
+                      <span>Assigned {formatDate(entry.assignedDate)}</span>
+                      {entry.completedDate && (
+                        <span>Completed {formatDate(entry.completedDate)}</span>
+                      )}
+                      <span>{entry.quest.durationMinutes} min</span>
+                      <span className="font-semibold text-amber-300">
+                        {entry.quest.xpReward} XP
+                      </span>
+                    </div>
+                  </article>
+                );
+              })}
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
+  );
+}
+
 export default function ActivityGraph({ session }: ActivityGraphProps) {
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<QuestProgressItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [hoveredPoint, setHoveredPoint] = useState<ActivityPoint | null>(null);
-  const [pinnedPoint, setPinnedPoint] = useState<ActivityPoint | null>(null);
-  const suppressHoverRef = useRef(false);
+  const [selectedPoint, setSelectedPoint] = useState<ActivityPoint | null>(null);
   const userId = session?.session?.userId || session?.user?.id;
 
   useEffect(() => {
@@ -203,30 +388,63 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
     const byDate: Record<string, ActivityPoint> = {};
     entries.forEach((entry) => {
       const date = entry.assignedDate.slice(0, 10);
-      if (!byDate[date]) byDate[date] = { date, entries: [] };
-      byDate[date].entries.push(entry);
-      const key = categoryKey(entry.quest.category);
-      const statusKey = `${key}${entry.status === "completed" ? "Completed" : "Pending"}`;
-      byDate[date][statusKey] = Number(byDate[date][statusKey] ?? 0) + 1;
+      if (!byDate[date]) {
+        byDate[date] = {
+          date,
+          entries: [],
+          completed: 0,
+          pending: 0,
+          missed: 0,
+        };
+      }
+      const status = getQuestProgressStatus(entry);
+      const normalizedEntry: QuestProgressEntry = { ...entry, status };
+      byDate[date].entries.push(normalizedEntry);
+      byDate[date][status] = Number(byDate[date][status] ?? 0) + 1;
     });
     return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
   }, [entries]);
+  const filteredChartData = useMemo(
+    () =>
+      chartData.map((point) => {
+        const filteredEntries =
+          selectedCategory === "all"
+            ? point.entries
+            : point.entries.filter(
+                (entry) => categoryKey(entry.quest.category) === selectedCategory,
+              );
+        return filteredEntries.reduce<ActivityPoint>(
+          (result, entry) => {
+            result[entry.status] += 1;
+            result.entries.push(entry);
+            return result;
+          },
+          {
+            date: point.date,
+            entries: [],
+            completed: 0,
+            pending: 0,
+            missed: 0,
+          },
+        );
+      }),
+    [chartData, selectedCategory],
+  );
 
-  const completedCount = entries.filter((entry) => entry.status === "completed").length;
-  const pendingCount = entries.length - completedCount;
+  const displayedEntries = useMemo(
+    () =>
+      entries.map((entry) => ({
+        ...entry,
+        status: getQuestProgressStatus(entry),
+      })),
+    [entries],
+  );
+  const completedCount = displayedEntries.filter((entry) => entry.status === "completed").length;
+  const pendingCount = displayedEntries.filter((entry) => entry.status === "pending").length;
+  const missedCount = displayedEntries.filter((entry) => entry.status === "missed").length;
   const totalXp = entries
     .filter((entry) => entry.status === "completed")
     .reduce((total, entry) => total + entry.quest.xpReward, 0);
-  const activePoint = pinnedPoint ?? hoveredPoint;
-  const activePointEntries =
-    activePoint?.entries.filter(
-      (entry) =>
-        selectedCategory === "all" ||
-        categoryKey(entry.quest.category) === selectedCategory,
-    ) ?? [];
-  const completedForActivePoint = activePointEntries.filter(
-    (entry) => entry.status === "completed",
-  ).length;
 
   if (loading) {
     return (
@@ -264,6 +482,10 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
               <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">In progress</p>
               <p className="mt-0.5 text-xl font-black text-white">{pendingCount}</p>
             </div>
+            <div className="rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-2.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-red-300">Missed</p>
+              <p className="mt-0.5 text-xl font-black text-white">{missedCount}</p>
+            </div>
             <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">XP earned</p>
               <p className="mt-0.5 flex items-center gap-1.5 text-xl font-black text-white">
@@ -291,8 +513,7 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   setSelectedCategory("all");
-                  setPinnedPoint(null);
-                  setHoveredPoint(null);
+                  setSelectedPoint(null);
                 }}
                 aria-pressed={selectedCategory === "all"}
                 className={`min-h-24 rounded-2xl border px-4 py-4 text-left transition-all duration-300 ${
@@ -315,8 +536,7 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => {
                       setSelectedCategory(category);
-                      setPinnedPoint(null);
-                      setHoveredPoint(null);
+                      setSelectedPoint(null);
                     }}
                     aria-pressed={selectedCategory === category}
                     className={`min-h-24 rounded-2xl border px-4 py-4 text-left transition-all duration-300 ${
@@ -332,33 +552,18 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
               })}
             </div>
 
-            <div
-              className="relative h-72 w-full min-w-0 sm:h-80"
-              onMouseLeave={() => {
-                setHoveredPoint(null);
-                suppressHoverRef.current = false;
-              }}
-            >
+            <div className="relative h-72 w-full min-w-0 sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
+                <AreaChart
+                  data={filteredChartData}
                   margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-                  onMouseMove={(state) => {
-                    if (suppressHoverRef.current || pinnedPoint) return;
-                    const index = state?.activeTooltipIndex;
-                    const point =
-                      typeof index === "number" ? chartData[index] : undefined;
-                    setHoveredPoint(isActivityPoint(point) ? point : null);
-                  }}
                   onClick={(state) => {
                     const index = state?.activeTooltipIndex;
                     const point =
-                      typeof index === "number" ? chartData[index] : undefined;
-                    if (isActivityPoint(point)) {
-                      suppressHoverRef.current = false;
-                      setPinnedPoint(point);
-                      setHoveredPoint(null);
-                    }
+                      typeof index === "number"
+                        ? filteredChartData[index]
+                        : undefined;
+                    if (isActivityPoint(point)) setSelectedPoint(point);
                   }}
                 >
                   <CartesianGrid stroke="#262626" strokeDasharray="4 4" vertical={false} />
@@ -377,112 +582,90 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                     axisLine={false}
                     fontSize={11}
                   />
-                  <Tooltip
-                    cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                    content={() => null}
-                  />
-                  {categories.map((category) => {
-                    if (selectedCategory !== "all" && selectedCategory !== category) return null;
-                    const color = getCategoryColors(category).chart;
-                    return (
-                      <ReactCategoryBars
-                        key={category}
-                        category={category}
-                        color={color}
+                  <Tooltip cursor={false} content={() => null} />
+                  <Area
+                    type="monotone"
+                    dataKey="completed"
+                    name="Completed"
+                    stroke="#f97316"
+                    strokeWidth={3}
+                    fill="#f97316"
+                    fillOpacity={0.12}
+                    dot={(props) => (
+                      <ActivityChartDot
+                        {...props}
+                        color="#f97316"
+                        onSelect={setSelectedPoint}
                       />
-                    );
-                  })}
-                </BarChart>
+                    )}
+                    activeDot={{ r: 5, stroke: "#fed7aa", strokeWidth: 2, fill: "#f97316" }}
+                    isAnimationActive
+                    animationDuration={900}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="pending"
+                    name="Pending"
+                    stroke="#34d399"
+                    strokeWidth={2.5}
+                    fill="#34d399"
+                    fillOpacity={0.08}
+                    dot={(props) => (
+                      <ActivityChartDot
+                        {...props}
+                        color="#34d399"
+                        onSelect={setSelectedPoint}
+                      />
+                    )}
+                    activeDot={{ r: 5, stroke: "#a7f3d0", strokeWidth: 2, fill: "#34d399" }}
+                    isAnimationActive
+                    animationDuration={1000}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="missed"
+                    name="Missed"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    fill="#ef4444"
+                    fillOpacity={0.12}
+                    dot={(props) => (
+                      <ActivityChartDot
+                        {...props}
+                        color="#ef4444"
+                        onSelect={setSelectedPoint}
+                      />
+                    )}
+                    activeDot={{ r: 5, stroke: "#fecaca", strokeWidth: 2, fill: "#ef4444" }}
+                    isAnimationActive
+                    animationDuration={1100}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
-              <AnimatePresence>
-                {activePoint && (
-                  <motion.aside
-                    key={activePoint.date}
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    role="dialog"
-                    aria-label="Activity details"
-                    className="absolute inset-x-2 top-2 z-20 max-h-[calc(100%-1rem)] overflow-hidden rounded-2xl border border-orange-500/25 bg-neutral-950/95 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.65),0_0_24px_rgba(249,115,22,0.1)] backdrop-blur-2xl sm:left-auto sm:right-2 sm:w-96"
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-orange-300">
-                          {formatDate(activePoint.date)}
-                        </p>
-                        <p className="mt-1 text-[11px] text-neutral-400">
-                          {completedForActivePoint} completed ·{" "}
-                          {activePointEntries.length - completedForActivePoint} pending
-                        </p>
-                      </div>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="outline"
-                        aria-label="Close activity details"
-                        onPress={() => {
-                          setPinnedPoint(null);
-                          setHoveredPoint(null);
-                          suppressHoverRef.current = true;
-                        }}
-                        className="shrink-0 border-neutral-700 bg-neutral-900 text-neutral-200 transition-colors hover:border-orange-400/50 hover:bg-orange-500/10 hover:text-white"
-                      >
-                        <X aria-hidden="true" className="size-4" />
-                      </Button>
-                    </div>
-                    <div className="max-h-52 space-y-2 overflow-y-auto overscroll-contain pr-1 sm:max-h-60">
-                      {activePointEntries.map((entry) => {
-                        const colors = getCategoryColors(
-                          categoryKey(entry.quest.category),
-                        );
-                        return (
-                          <div
-                            key={entry.id}
-                            className="rounded-xl border border-neutral-800 bg-neutral-900/75 p-3"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <p className="text-sm font-semibold text-white">
-                                {entry.quest.title}
-                              </p>
-                              <span
-                                className={`shrink-0 text-[10px] font-bold ${colors.text}`}
-                              >
-                                {formatCategory(entry.quest.category)}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-xs text-neutral-400">
-                              {entry.quest.description}
-                            </p>
-                            <p className="mt-2 text-[11px] text-neutral-300">
-                              {entry.status === "completed" ? "Completed" : "Pending"}
-                              {entry.completedDate
-                                ? ` · ${formatDate(entry.completedDate)}`
-                                : ""}
-                              {" · "}
-                              {entry.quest.durationMinutes} min · {entry.quest.xpReward} XP
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </motion.aside>
-                )}
-              </AnimatePresence>
             </div>
+            {selectedPoint && (
+              <ActivityDetailsModal
+                point={selectedPoint}
+                selectedCategory={selectedCategory}
+                onClose={() => setSelectedPoint(null)}
+              />
+            )}
 
+            <p className="mt-3 text-center text-xs text-neutral-500">
+              Select any point on the activity waves to see what you did and what was missed.
+            </p>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-neutral-400">
-              {categories
-                .filter((category) => selectedCategory === "all" || selectedCategory === category)
-                .map((category) => (
-                  <span key={category} className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: getCategoryColors(category).chart }} />
-                    {formatCategory(category)}
-                  </span>
-                ))}
               <span className="inline-flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm bg-white/25" />
+                <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+                Completed
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                 Pending
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                Missed
               </span>
             </div>
 
@@ -495,7 +678,9 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                 {visibleEntries.map((entry, index) => {
                   const category = categoryKey(entry.quest.category);
                   const colors = getCategoryColors(category);
-                  const isCompleted = entry.status === "completed";
+                  const status = getQuestProgressStatus(entry);
+                  const isCompleted = status === "completed";
+                  const isMissed = status === "missed";
                   return (
                     <motion.article
                       key={entry.id}
@@ -511,10 +696,20 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                           <h4 className="mt-1 truncate text-sm font-bold text-white">{entry.quest.title}</h4>
                         </div>
                         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                          isCompleted ? "bg-orange-500/15 text-orange-300" : "bg-neutral-800 text-neutral-300"
+                          isCompleted
+                            ? "bg-orange-500/15 text-orange-300"
+                            : isMissed
+                              ? "bg-red-500/15 text-red-300"
+                              : "bg-emerald-500/15 text-emerald-300"
                         }`}>
-                          {isCompleted ? <Check size={12} /> : <Clock3 size={12} />}
-                          {isCompleted ? "Done" : "Pending"}
+                          {isCompleted ? (
+                            <Check size={12} />
+                          ) : isMissed ? (
+                            <AlertTriangle size={12} />
+                          ) : (
+                            <Clock3 size={12} />
+                          )}
+                          {isCompleted ? "Done" : isMissed ? "Missed" : "Pending"}
                         </span>
                       </div>
                       <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-neutral-400">{entry.quest.description}</p>
@@ -543,31 +738,5 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
         )}
       </div>
     </motion.section>
-  );
-}
-
-function ReactCategoryBars({ category, color }: { category: string; color: string }) {
-  return (
-    <>
-      <Bar
-        dataKey={`${category}Completed`}
-        name={`${formatCategory(category)} completed`}
-        stackId="completed"
-        fill={color}
-        radius={[3, 3, 0, 0]}
-        maxBarSize={24}
-        isAnimationActive
-      />
-      <Bar
-        dataKey={`${category}Pending`}
-        name={`${formatCategory(category)} pending`}
-        stackId="pending"
-        fill={color}
-        fillOpacity={0.3}
-        radius={[3, 3, 0, 0]}
-        maxBarSize={24}
-        isAnimationActive
-      />
-    </>
   );
 }

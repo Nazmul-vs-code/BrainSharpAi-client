@@ -2,6 +2,37 @@ import type { Quest, UserProfile } from "@/types/quest";
 
 type ApiRecord = Record<string, unknown>;
 
+export type QuestProgressStatus = "completed" | "pending" | "missed";
+
+export function getQuestProgressStatus(
+  progress: {
+    status: "pending" | "completed";
+    assignedDate: string;
+  },
+  referenceDate = new Date(),
+): QuestProgressStatus {
+  if (progress.status === "completed") return "completed";
+  if (Number.isNaN(referenceDate.getTime())) return "pending";
+
+  const assignedDate = progress.assignedDate.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(assignedDate)) return "pending";
+
+  const parsedAssignedDate = new Date(`${assignedDate}T00:00:00.000Z`);
+  if (
+    Number.isNaN(parsedAssignedDate.getTime()) ||
+    parsedAssignedDate.toISOString().slice(0, 10) !== assignedDate
+  ) {
+    return "pending";
+  }
+
+  const year = referenceDate.getFullYear();
+  const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
+  const day = String(referenceDate.getDate()).padStart(2, "0");
+  const today = `${year}-${month}-${day}`;
+
+  return assignedDate < today ? "missed" : "pending";
+}
+
 function isRecord(value: unknown): value is ApiRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

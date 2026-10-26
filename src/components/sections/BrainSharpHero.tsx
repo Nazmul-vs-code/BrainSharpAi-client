@@ -335,7 +335,7 @@ export default function BrainSharpHero({
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(#1f1f23_1px,transparent_1px)] [background-size:26px_26px] opacity-35"
       />
 
-      <div className="relative grid min-h-[calc(100svh-4rem)] w-full grid-cols-1 items-stretch gap-0 lg:grid-cols-[1fr_1fr]">
+      <div className="relative mx-auto grid min-h-[calc(100svh-4rem)] w-full max-w-7xl grid-cols-1 items-stretch gap-0 px-6 lg:grid-cols-[1fr_1fr] lg:px-8">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, x: 72 }}
           animate={{ opacity: 1, x: 0 }}
@@ -344,7 +344,7 @@ export default function BrainSharpHero({
             delay: reduceMotion ? 0 : 0.58,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="relative z-10 flex flex-col items-start justify-center bg-[#050507] px-5 py-7 text-left sm:px-8 sm:py-9 lg:px-10 xl:px-14"
+          className="relative z-10 flex flex-col items-start justify-center bg-[#050507] py-7 text-left sm:py-9"
         >
           <motion.span
             aria-hidden="true"
@@ -418,7 +418,7 @@ export default function BrainSharpHero({
             delay: reduceMotion ? 0 : 0.64,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="relative z-10 flex min-h-[520px] flex-col justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.055] px-3 py-5 backdrop-blur-2xl sm:px-6 sm:py-7 lg:min-h-[calc(100svh-8rem)] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:bg-white/[0.045] lg:px-7 xl:px-9"
+          className="relative z-10 flex min-h-[520px] flex-col justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.055] py-5 backdrop-blur-2xl sm:py-7 lg:min-h-[calc(100svh-8rem)] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:bg-white/[0.045]"
         >
           <div
             aria-hidden="true"

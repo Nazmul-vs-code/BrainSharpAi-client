@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -10,8 +10,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Activity, Check, Clock3, Flame, Loader2, Trophy } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@heroui/react";
+import {
+  Activity,
+  Check,
+  Clock3,
+  Flame,
+  Loader2,
+  Trophy,
+  X,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { FetchData } from "@/lib/api/FetchData";
 
 interface ActivityGraphProps {
@@ -45,13 +54,12 @@ interface ActivityPoint {
 const categoryColors: Record<string, { chart: string; soft: string; text: string }> = {
   mental: { chart: "#fb923c", soft: "bg-orange-500/15", text: "text-orange-300" },
   physical: { chart: "#34d399", soft: "bg-emerald-500/15", text: "text-emerald-300" },
-  puzzle: { chart: "#a78bfa", soft: "bg-violet-500/15", text: "text-violet-300" },
+  puzzle: { chart: "#fbbf24", soft: "bg-amber-500/15", text: "text-amber-300" },
 };
 const fallbackCategoryColors = [
-  { chart: "#facc15", soft: "bg-amber-500/15", text: "text-amber-300" },
-  { chart: "#38bdf8", soft: "bg-sky-500/15", text: "text-sky-300" },
-  { chart: "#f472b6", soft: "bg-pink-500/15", text: "text-pink-300" },
-  { chart: "#a3e635", soft: "bg-lime-500/15", text: "text-lime-300" },
+  { chart: "#fb923c", soft: "bg-orange-500/15", text: "text-orange-300" },
+  { chart: "#34d399", soft: "bg-emerald-500/15", text: "text-emerald-300" },
+  { chart: "#fbbf24", soft: "bg-amber-500/15", text: "text-amber-300" },
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -124,11 +132,22 @@ function formatCategory(category: string): string {
   return category.charAt(0).toUpperCase() + category.slice(1);
 }
 
+function isActivityPoint(value: unknown): value is ActivityPoint {
+  return (
+    isRecord(value) &&
+    typeof value.date === "string" &&
+    Array.isArray(value.entries)
+  );
+}
+
 export default function ActivityGraph({ session }: ActivityGraphProps) {
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<QuestProgressItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [hoveredPoint, setHoveredPoint] = useState<ActivityPoint | null>(null);
+  const [pinnedPoint, setPinnedPoint] = useState<ActivityPoint | null>(null);
+  const suppressHoverRef = useRef(false);
   const userId = session?.session?.userId || session?.user?.id;
 
   useEffect(() => {
@@ -198,10 +217,20 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
   const totalXp = entries
     .filter((entry) => entry.status === "completed")
     .reduce((total, entry) => total + entry.quest.xpReward, 0);
+  const activePoint = pinnedPoint ?? hoveredPoint;
+  const activePointEntries =
+    activePoint?.entries.filter(
+      (entry) =>
+        selectedCategory === "all" ||
+        categoryKey(entry.quest.category) === selectedCategory,
+    ) ?? [];
+  const completedForActivePoint = activePointEntries.filter(
+    (entry) => entry.status === "completed",
+  ).length;
 
   if (loading) {
     return (
-      <div className="flex h-72 w-full items-center justify-center rounded-3xl border border-orange-500/20 bg-neutral-950/80">
+      <div className="flex h-72 w-full items-center justify-center rounded-3xl border border-orange-500/20 bg-[#050507]">
         <Loader2 size={26} className="animate-spin text-orange-400" />
       </div>
     );
@@ -212,7 +241,7 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="relative mt-6 w-full min-w-0 overflow-hidden rounded-3xl border border-orange-500/20 bg-neutral-950/90 p-4 shadow-[0_0_40px_rgba(249,115,22,0.08)] sm:p-7"
+      className="relative mt-6 w-full min-w-0 overflow-hidden rounded-3xl border border-orange-500/20 bg-neutral-900/40 p-4 shadow-[0_0_40px_rgba(249,115,22,0.06)] backdrop-blur-2xl sm:p-6"
     >
       <div className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
       <div className="relative z-10">
@@ -231,8 +260,8 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
               <p className="text-[10px] font-bold uppercase tracking-wider text-orange-300">Completed</p>
               <p className="mt-0.5 text-xl font-black text-white">{completedCount}</p>
             </div>
-            <div className="rounded-2xl border border-neutral-700 bg-neutral-900/80 px-4 py-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">In progress</p>
+            <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-2.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">In progress</p>
               <p className="mt-0.5 text-xl font-black text-white">{pendingCount}</p>
             </div>
             <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-2.5">
@@ -255,16 +284,21 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
           </div>
         ) : (
           <>
-            <div className="mb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <motion.button
                 type="button"
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setSelectedCategory("all")}
-                className={`rounded-2xl border px-4 py-3 text-left transition-colors sm:min-w-32 ${
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setPinnedPoint(null);
+                  setHoveredPoint(null);
+                }}
+                aria-pressed={selectedCategory === "all"}
+                className={`min-h-24 rounded-2xl border px-4 py-4 text-left transition-all duration-300 ${
                   selectedCategory === "all"
-                    ? "border-orange-400/60 bg-orange-500/15 text-white shadow-[0_0_22px_rgba(249,115,22,0.12)]"
-                    : "border-neutral-800 bg-neutral-900/60 text-neutral-300 hover:border-orange-500/40"
+                    ? "border-orange-400/60 bg-orange-500/15 text-white shadow-[0_0_22px_rgba(249,115,22,0.16)]"
+                    : "border-neutral-800 bg-neutral-900/60 text-neutral-300 hover:border-orange-500/40 hover:bg-orange-500/[0.06]"
                 }`}
               >
                 <span className="block text-xs font-semibold">All activity</span>
@@ -279,11 +313,16 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                     type="button"
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`rounded-2xl border px-4 py-3 text-left transition-colors sm:min-w-32 ${
+                    onClick={() => {
+                      setSelectedCategory(category);
+                      setPinnedPoint(null);
+                      setHoveredPoint(null);
+                    }}
+                    aria-pressed={selectedCategory === category}
+                    className={`min-h-24 rounded-2xl border px-4 py-4 text-left transition-all duration-300 ${
                       selectedCategory === category
-                        ? `${colors.soft} border-white/25 text-white`
-                        : "border-neutral-800 bg-neutral-900/60 text-neutral-300 hover:border-neutral-600"
+                        ? `${colors.soft} border-orange-400/60 text-white shadow-[0_0_22px_rgba(249,115,22,0.16)]`
+                        : "border-neutral-800 bg-neutral-900/60 text-neutral-300 hover:border-orange-500/40 hover:bg-orange-500/[0.06]"
                     }`}
                   >
                     <span className={`block text-xs font-semibold ${colors.text}`}>{formatCategory(category)}</span>
@@ -293,9 +332,35 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
               })}
             </div>
 
-            <div className="h-72 w-full min-w-0 sm:h-80">
+            <div
+              className="relative h-72 w-full min-w-0 sm:h-80"
+              onMouseLeave={() => {
+                setHoveredPoint(null);
+                suppressHoverRef.current = false;
+              }}
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
+                  onMouseMove={(state) => {
+                    if (suppressHoverRef.current || pinnedPoint) return;
+                    const index = state?.activeTooltipIndex;
+                    const point =
+                      typeof index === "number" ? chartData[index] : undefined;
+                    setHoveredPoint(isActivityPoint(point) ? point : null);
+                  }}
+                  onClick={(state) => {
+                    const index = state?.activeTooltipIndex;
+                    const point =
+                      typeof index === "number" ? chartData[index] : undefined;
+                    if (isActivityPoint(point)) {
+                      suppressHoverRef.current = false;
+                      setPinnedPoint(point);
+                      setHoveredPoint(null);
+                    }
+                  }}
+                >
                   <CartesianGrid stroke="#262626" strokeDasharray="4 4" vertical={false} />
                   <XAxis
                     dataKey="date"
@@ -314,41 +379,7 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                   />
                   <Tooltip
                     cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                    content={({ active, payload }) => {
-                      const point = payload?.[0]?.payload as ActivityPoint | undefined;
-                      if (!active || !point) return null;
-                      const dayEntries = point.entries.filter(
-                        (entry) => selectedCategory === "all" || categoryKey(entry.quest.category) === selectedCategory,
-                      );
-                      return (
-                        <div className="max-w-sm rounded-2xl border border-neutral-700 bg-neutral-950/95 p-4 shadow-2xl backdrop-blur-xl">
-                          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-orange-300">
-                            {formatDate(point.date)}
-                          </p>
-                          <div className="max-h-64 space-y-2 overflow-y-auto">
-                            {dayEntries.map((entry) => {
-                              const colors = getCategoryColors(categoryKey(entry.quest.category));
-                              return (
-                                <div key={entry.id} className="rounded-xl border border-neutral-800 bg-neutral-900/70 p-3">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <p className="text-sm font-semibold text-white">{entry.quest.title}</p>
-                                    <span className={`shrink-0 text-[10px] font-bold ${colors.text}`}>
-                                      {formatCategory(entry.quest.category)}
-                                    </span>
-                                  </div>
-                                  <p className="mt-1 text-xs text-neutral-400">{entry.quest.description}</p>
-                                  <p className="mt-2 text-[11px] text-neutral-300">
-                                    {entry.status === "completed" ? "Completed" : "Pending"}
-                                    {entry.completedDate ? ` · ${formatDate(entry.completedDate)}` : ""}
-                                    {" · "}{entry.quest.durationMinutes} min · {entry.quest.xpReward} XP
-                                  </p>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    }}
+                    content={() => null}
                   />
                   {categories.map((category) => {
                     if (selectedCategory !== "all" && selectedCategory !== category) return null;
@@ -363,6 +394,81 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                   })}
                 </BarChart>
               </ResponsiveContainer>
+              <AnimatePresence>
+                {activePoint && (
+                  <motion.aside
+                    key={activePoint.date}
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    role="dialog"
+                    aria-label="Activity details"
+                    className="absolute inset-x-2 top-2 z-20 max-h-[calc(100%-1rem)] overflow-hidden rounded-2xl border border-orange-500/25 bg-neutral-950/95 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.65),0_0_24px_rgba(249,115,22,0.1)] backdrop-blur-2xl sm:left-auto sm:right-2 sm:w-96"
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-orange-300">
+                          {formatDate(activePoint.date)}
+                        </p>
+                        <p className="mt-1 text-[11px] text-neutral-400">
+                          {completedForActivePoint} completed ·{" "}
+                          {activePointEntries.length - completedForActivePoint} pending
+                        </p>
+                      </div>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="outline"
+                        aria-label="Close activity details"
+                        onPress={() => {
+                          setPinnedPoint(null);
+                          setHoveredPoint(null);
+                          suppressHoverRef.current = true;
+                        }}
+                        className="shrink-0 border-neutral-700 bg-neutral-900 text-neutral-200 transition-colors hover:border-orange-400/50 hover:bg-orange-500/10 hover:text-white"
+                      >
+                        <X aria-hidden="true" className="size-4" />
+                      </Button>
+                    </div>
+                    <div className="max-h-52 space-y-2 overflow-y-auto overscroll-contain pr-1 sm:max-h-60">
+                      {activePointEntries.map((entry) => {
+                        const colors = getCategoryColors(
+                          categoryKey(entry.quest.category),
+                        );
+                        return (
+                          <div
+                            key={entry.id}
+                            className="rounded-xl border border-neutral-800 bg-neutral-900/75 p-3"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="text-sm font-semibold text-white">
+                                {entry.quest.title}
+                              </p>
+                              <span
+                                className={`shrink-0 text-[10px] font-bold ${colors.text}`}
+                              >
+                                {formatCategory(entry.quest.category)}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-neutral-400">
+                              {entry.quest.description}
+                            </p>
+                            <p className="mt-2 text-[11px] text-neutral-300">
+                              {entry.status === "completed" ? "Completed" : "Pending"}
+                              {entry.completedDate
+                                ? ` · ${formatDate(entry.completedDate)}`
+                                : ""}
+                              {" · "}
+                              {entry.quest.durationMinutes} min · {entry.quest.xpReward} XP
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.aside>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-neutral-400">

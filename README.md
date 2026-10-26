@@ -1,10 +1,12 @@
-# BrainSharp AI
+# 🧠 BrainSharp AI
+
+> **Live frontend:** [https://brain-sharp-ai-client.vercel.app](https://brain-sharp-ai-client.vercel.app)
 
 BrainSharp AI is a habit-building and cognitive-wellness web app. It helps people turn broad goals like improving focus or staying active into manageable daily actions, then makes progress visible through quests, streaks, XP, and activity analytics.
 
 This repository contains the **Next.js client**. Authentication is handled with Better Auth, while quest, profile, leaderboard, and AI-coach data are served by the BrainSharp backend.
 
-## Why BrainSharp AI?
+## ⚡ Why BrainSharp AI?
 
 Building a routine can take time before the work even begins: deciding what to do, planning a session, and figuring out whether it is helping. BrainSharp AI reduces that overhead:
 
@@ -17,7 +19,7 @@ Building a routine can take time before the work even begins: deciding what to d
 
 The aim is to make consistent practice easier to begin and easier to sustain—not to replace professional mental or physical healthcare.
 
-## Features
+## ✨ Features
 
 - Email and password authentication.
 - Daily quests for mindfulness, movement, and brain training.
@@ -28,7 +30,7 @@ The aim is to make consistent practice easier to begin and easier to sustain—n
 - Global and category leaderboards.
 - Responsive dark interface with animated interactions.
 
-## Technology
+## 🛠️ Technology
 
 - Next.js App Router and React
 - TypeScript
@@ -39,16 +41,16 @@ The aim is to make consistent practice easier to begin and easier to sustain—n
 - Better Auth
 - PostgreSQL connection through `pg`
 
-## Getting started
+## 🚀 Getting started
 
-### Prerequisites
+### 📋 Prerequisites
 
 - Node.js 20.9 or later
 - npm
 - A PostgreSQL database for Better Auth
 - The BrainSharp backend service for quest, profile, leaderboard, and AI-coach features
 
-### Install and run
+### 💻 Install and run
 
 ```bash
 npm install
@@ -59,7 +61,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Configure the required environment variables before using authentication or backend-powered features. Keep credentials in a local environment file such as `.env.local`; environment files are ignored by Git and must never be committed.
 
-## Environment configuration
+## 🔐 Environment configuration
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
@@ -74,7 +76,7 @@ The backend proxy falls back to the deployed BrainSharp backend when neither bac
 
 Do not put secrets in variables prefixed with `NEXT_PUBLIC_`; Next.js exposes those values to the browser.
 
-## Useful commands
+## 🧰 Useful commands
 
 ```bash
 npm run dev      # Start the local development server
@@ -83,7 +85,7 @@ npm run build    # Create a production build
 npm run start    # Serve the production build
 ```
 
-## Project structure
+## 🗂️ Project structure
 
 ```text
 src/
@@ -121,14 +123,14 @@ public/
 └── images/                  # Static images used by the interface
 ```
 
-### Request and data flow
+### 🔄 Request and data flow
 
 1. The client uses the helpers in `src/lib/api/` for backend requests.
 2. Requests are sent through `/api/backend`, a same-origin Next.js proxy that forwards them to the configured BrainSharp backend.
 3. Authentication requests are handled separately by `/api/auth` and Better Auth.
 4. Feature pages validate and transform API responses before rendering their UI. Shared quest and profile parsing logic lives in `src/lib/quest/questData.ts`.
 
-## Production
+## 🌐 Production
 
 Build and start the client with:
 

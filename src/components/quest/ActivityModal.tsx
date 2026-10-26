@@ -105,7 +105,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
     <Modal state={modalState}>
       <Modal.Backdrop
         isDismissable={!isSubmitting}
-        className="overflow-y-auto bg-black/80 p-2 backdrop-blur-md sm:p-4"
+        className="overflow-y-auto bg-[#020711]/80 p-2 backdrop-blur-md sm:p-4"
       >
         <Modal.Container
           placement="center"
@@ -113,27 +113,27 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
           size="lg"
           className="max-h-[100dvh] min-h-0 w-full overflow-y-auto p-2 sm:p-4"
         >
-          <Modal.Dialog className="my-auto max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-x-hidden overflow-y-auto rounded-3xl border border-orange-500/20 bg-[#08080a] text-white shadow-[0_24px_90px_rgba(0,0,0,0.7)] sm:max-h-[calc(100dvh-2rem)]">
+          <Modal.Dialog className="quest-glass-panel my-auto max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-x-hidden overflow-y-auto rounded-3xl text-white sm:max-h-[calc(100dvh-2rem)]">
             <motion.div
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               className="relative flex min-h-0 flex-col"
             >
-              <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-orange-600/20 blur-[80px]" />
+              <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-orange-500/[0.08] blur-[80px]" />
               <Modal.Header className="relative flex shrink-0 items-start justify-between gap-4 px-5 pt-5 sm:px-8 sm:pt-8">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-orange-400">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-orange-300">
                     {quest.category} session
                   </p>
                   <Modal.Heading className="mt-1 break-words text-xl font-bold sm:text-2xl">
                     {quest.title}
                   </Modal.Heading>
-                  <p className="mt-2 break-words text-sm text-neutral-400">{quest.description}</p>
+                  <p className="mt-2 break-words text-sm text-slate-300">{quest.description}</p>
                 </div>
                 <Modal.CloseTrigger
                   isDisabled={isSubmitting}
                   aria-label="Close activity"
-                  className="shrink-0 rounded-lg p-2 text-neutral-400 transition hover:bg-white/10 hover:text-white"
+                  className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
                 >
                   <FaTimes aria-hidden="true" />
                 </Modal.CloseTrigger>
@@ -142,7 +142,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
               <Modal.Body className="relative min-h-0 px-5 pb-5 sm:px-8 sm:pb-8">
                 <div className="my-4 flex justify-center sm:my-6">
                   <div
-                    className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full border-4 border-orange-500/30 bg-orange-500/[0.04] shadow-[0_0_28px_rgba(249,115,22,0.08)] sm:h-44 sm:w-44"
+                    className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full border-4 border-orange-400/25 bg-orange-400/[0.05] shadow-[0_0_28px_rgba(255,107,0,0.12)] sm:h-44 sm:w-44"
                     aria-live="polite"
                     aria-label={`${formatTime(timeLeft)} remaining`}
                   >
@@ -154,17 +154,17 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
 
                 {quest.category === "mental" && (
                   <div className="mb-5 flex justify-center">
-                    <div className="w-full rounded-2xl border border-neutral-800 bg-neutral-900/70 p-4">
+                    <div className="w-full rounded-2xl border border-white/10 bg-white/[0.045] p-4 shadow-sm">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="font-semibold text-white">Rain ambience</p>
-                          <p className="mt-1 text-xs text-neutral-400">Soft rain and nature sounds for focus</p>
+                          <p className="mt-1 text-xs text-slate-300">Soft rain and nature sounds for focus</p>
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
                           onPress={toggleRainAudio}
-                          className="gap-2 border-neutral-700 text-xs text-neutral-200"
+                          className="gap-2 border-white/70 bg-white text-xs font-semibold text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-white"
                           aria-pressed={isPlayingAudio}
                         >
                           {isPlayingAudio
@@ -180,7 +180,7 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Button
                     onPress={() => setIsRunning((running) => !running)}
-                    className="h-12 gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 px-6 font-semibold text-black shadow-[0_8px_24px_rgba(249,115,22,0.16)] transition hover:brightness-110"
+                    className="h-12 gap-2 rounded-2xl bg-white px-6 font-semibold text-black shadow-[0_8px_24px_rgba(0,0,0,0.28)] ring-1 ring-white/70 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_30px_rgba(0,0,0,0.38)]"
                   >
                     {isRunning ? <FaPause aria-hidden="true" /> : <FaPlay aria-hidden="true" />}
                     {isRunning ? "Pause timer" : "Start timer"}
@@ -191,18 +191,18 @@ export default function ActivityModal({ quest, isOpen, onClose, onComplete }: Ac
                       setTimeLeft((remaining) => remaining + 5 * 60);
                       setDurationSpentMinutes((minutes) => minutes + 5);
                     }}
-                    className="h-12 gap-2 rounded-2xl border-orange-500/20 px-4 text-neutral-300 hover:bg-orange-500/10"
+                    className="h-12 gap-2 rounded-2xl border-white/70 bg-white px-4 text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-white"
                   >
                     <FaPlus aria-hidden="true" />
                     Add 5 min
                   </Button>
                 </div>
 
-                <div className="mt-6 border-t border-neutral-800/80 pt-5">
+                <div className="mt-6 border-t border-white/10 pt-5">
                   <Button
                     onPress={handleComplete}
                     isDisabled={isSubmitting}
-                    className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 font-semibold text-white shadow-lg shadow-orange-500/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-12 w-full gap-2 rounded-2xl bg-white font-semibold text-black shadow-[0_8px_24px_rgba(0,0,0,0.28)] ring-1 ring-white/70 transition-all duration-300 hover:bg-white hover:shadow-[0_12px_30px_rgba(0,0,0,0.38)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <FaCheckCircle aria-hidden="true" />
                     {isSubmitting

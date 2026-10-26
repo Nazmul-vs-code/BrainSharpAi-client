@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { Button } from "@heroui/react";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import ActivityModal from "@/components/quest/ActivityModal";
@@ -25,6 +26,7 @@ import type { Quest, QuestId, UserProfile } from "@/types/quest";
 export { calculateTrueStreak } from "@/lib/quest/questData";
 
 export default function QuestPage() {
+  const router = useRouter();
   const { data: session, isPending: isSessionPending } = useSession();
   const userId = session?.user?.id;
   const userName = session?.user?.name ?? null;
@@ -265,7 +267,7 @@ export default function QuestPage() {
 
   if (isSessionPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050507] text-white">
+      <div className="flex min-h-screen items-center justify-center bg-black text-white">
         <Loader2
           className="size-8 animate-spin text-orange-400"
           aria-label="Loading"
@@ -276,23 +278,23 @@ export default function QuestPage() {
 
   if (!userId) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#050507] px-6 text-white">
-        <div className="max-w-md text-center">
-          <span className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-orange-500/25 bg-orange-500/10 text-orange-300">
+      <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-black px-6 text-white">
+        <div className="quest-glass-panel w-full max-w-md rounded-[2rem] p-8 text-center sm:p-10">
+          <span className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-orange-400/25 bg-orange-400/[0.08] text-orange-300 shadow-[0_0_24px_rgba(255,107,0,0.12)]">
             <Sparkles aria-hidden="true" className="size-6" />
           </span>
           <h1 className="mt-5 text-2xl font-semibold tracking-tight">
             Sign in to view your quests
           </h1>
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
+          <p className="mt-3 text-sm leading-6 text-slate-300">
             Your quests and progress are linked to your account.
           </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 px-5 text-sm font-bold text-black transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050507]"
+          <Button
+            onPress={() => router.push("/login")}
+            className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-black shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-1 ring-white/70 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_32px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
           >
             Sign in <ArrowRight aria-hidden="true" className="size-4" />
-          </Link>
+          </Button>
         </div>
       </main>
     );
@@ -303,11 +305,7 @@ export default function QuestPage() {
   ).length;
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-[#050507] px-4 py-8 text-white sm:px-6 sm:py-12 lg:px-8">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[28rem] w-[min(100%,64rem)] -translate-x-1/2 rounded-full bg-orange-500/[0.045] blur-[100px]"
-      />
+    <main className="relative isolate min-h-screen overflow-hidden bg-black px-4 py-8 text-slate-100 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-10">
         {userProfile && (
           <QuestHeader
@@ -323,7 +321,7 @@ export default function QuestPage() {
         {profileError && (
           <p
             role="alert"
-            className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300"
+            className="rounded-2xl border border-orange-400/20 bg-orange-400/[0.06] p-4 text-sm text-orange-100 shadow-sm backdrop-blur-xl"
           >
             {profileError}
           </p>
@@ -345,13 +343,13 @@ export default function QuestPage() {
               </div>
               <h2
                 id="active-quests-heading"
-                className="text-2xl font-semibold tracking-tight text-white sm:text-3xl"
+                className="text-2xl font-semibold tracking-tight text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.55)] sm:text-3xl"
               >
                 Today&apos;s quests
               </h2>
             </div>
             {quests.length > 0 && (
-              <span className="rounded-full border border-orange-500/20 bg-orange-500/[0.07] px-3 py-1.5 text-xs font-medium text-orange-200/80">
+              <span className="rounded-full border border-orange-400/20 bg-orange-400/[0.07] px-3 py-1.5 text-xs font-medium text-orange-100 shadow-sm backdrop-blur-xl">
                 {completedCount} / {quests.length} complete
               </span>
             )}
@@ -360,7 +358,7 @@ export default function QuestPage() {
           {questError && (
             <p
               role="status"
-              className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200"
+              className="mb-5 rounded-2xl border border-orange-400/20 bg-orange-400/[0.06] p-4 text-sm text-orange-100 shadow-sm backdrop-blur-xl"
             >
               {questError}
             </p>
@@ -368,9 +366,9 @@ export default function QuestPage() {
           {questSyncStatus === "loading" && (
             <div
               role="status"
-              className="flex items-center gap-3 rounded-2xl border border-orange-500/15 bg-neutral-900/30 p-5 text-sm text-neutral-400"
+              className="quest-glass-panel flex items-center gap-3 rounded-2xl p-5 text-sm text-slate-300"
             >
-              <Loader2 aria-hidden="true" className="size-4 animate-spin text-orange-400" />
+            <Loader2 aria-hidden="true" className="size-4 animate-spin text-orange-400" />
               Loading your quests...
             </div>
           )}

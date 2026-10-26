@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Google_Sans, Orbitron } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layouts/Navbar";
+import MobileNav from "@/components/layouts/MobileNav";
 import { SoundProvider } from "@/components/providers/SoundProvider";
 
 import { Toaster } from 'react-hot-toast'
@@ -42,7 +43,8 @@ export default function RootLayout({
 
         <SoundProvider>
           <Navbar />
-          {children}
+          <main className="flex-1 pb-24 md:pb-0">{children}</main>
+          <MobileNav />
         </SoundProvider>
       </body>
     </html>

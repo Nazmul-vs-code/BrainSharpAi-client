@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { BrainCircuit, House, Info, Sparkles, Trophy } from "lucide-react";
+import { Activity, BrainCircuit, House, Info, Sparkles, Trophy } from "lucide-react";
 import { useSound } from "@/components/providers/SoundProvider";
 
 const navigation = [
   { label: "Home", href: "/", icon: House },
   { label: "BrainSharp AI", href: "/brainsharp-ai", icon: Sparkles },
   { label: "The Quest", href: "/quest", icon: BrainCircuit },
+  { label: "Activity", href: "/activity", icon: Activity },
   { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { label: "About", href: "/about", icon: Info },
 ];
@@ -39,7 +40,7 @@ export default function MobileNav() {
               aria-current={active ? "page" : undefined}
               title={item.label}
               onClick={() => playSound("navigation", 0.7)}
-              className={`relative z-0 flex size-12 items-center justify-center rounded-full transition-all duration-300 ${
+              className={`relative z-0 flex size-10 items-center justify-center rounded-full transition-all duration-300 sm:size-12 ${
                 active
                   ? "z-10 scale-105 text-white"
                   : "text-neutral-400 hover:text-white"

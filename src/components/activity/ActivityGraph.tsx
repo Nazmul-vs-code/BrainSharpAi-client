@@ -65,6 +65,8 @@ interface ActivityPoint {
   [key: string]: string | number | QuestProgressEntry[];
 }
 
+type ActivityRange = "7d" | "30d" | "all";
+
 const categoryColors: Record<string, { chart: string; soft: string; text: string }> = {
   mental: { chart: "#fb923c", soft: "bg-orange-500/15", text: "text-orange-300" },
   physical: { chart: "#34d399", soft: "bg-emerald-500/15", text: "text-emerald-300" },
@@ -144,6 +146,13 @@ function formatDate(date: string, options?: Intl.DateTimeFormatOptions): string 
 
 function formatCategory(category: string): string {
   return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function isActivityPoint(value: unknown): value is ActivityPoint {
@@ -333,6 +342,7 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPoint, setSelectedPoint] = useState<ActivityPoint | null>(null);
+  const [selectedRange, setSelectedRange] = useState<ActivityRange>("30d");
   const userId = session?.session?.userId || session?.user?.id;
 
   useEffect(() => {
@@ -373,20 +383,40 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
     };
   }, [userId]);
 
+  const rangeStart = useMemo(() => {
+    if (selectedRange === "all") return null;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (selectedRange === "7d" ? 6 : 29));
+    return getLocalDateKey(start);
+  }, [selectedRange]);
+  const rangeEntries = useMemo(
+    () =>
+      rangeStart
+        ? entries.filter((entry) => entry.assignedDate.slice(0, 10) >= rangeStart)
+        : entries,
+    [entries, rangeStart],
+  );
+  const rangeLabel =
+    selectedRange === "all"
+      ? "all time"
+      : selectedRange === "7d"
+        ? "last 7 days"
+        : "last 30 days";
   const categories = useMemo(
-    () => Array.from(new Set(entries.map((entry) => categoryKey(entry.quest.category)))),
-    [entries],
+    () => Array.from(new Set(rangeEntries.map((entry) => categoryKey(entry.quest.category)))),
+    [rangeEntries],
   );
   const visibleEntries = useMemo(
-    () => entries
+    () => rangeEntries
       .filter((entry) => selectedCategory === "all" || categoryKey(entry.quest.category) === selectedCategory)
       .sort((a, b) => b.assignedDate.localeCompare(a.assignedDate) || b.id - a.id)
       .slice(0, 6),
-    [entries, selectedCategory],
+    [rangeEntries, selectedCategory],
   );
   const chartData = useMemo(() => {
     const byDate: Record<string, ActivityPoint> = {};
-    entries.forEach((entry) => {
+    rangeEntries.forEach((entry) => {
       const date = entry.assignedDate.slice(0, 10);
       if (!byDate[date]) {
         byDate[date] = {
@@ -403,7 +433,7 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
       byDate[date][status] = Number(byDate[date][status] ?? 0) + 1;
     });
     return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
-  }, [entries]);
+  }, [rangeEntries]);
   const filteredChartData = useMemo(
     () =>
       chartData.map((point) => {
@@ -433,16 +463,16 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
 
   const displayedEntries = useMemo(
     () =>
-      entries.map((entry) => ({
+      rangeEntries.map((entry) => ({
         ...entry,
         status: getQuestProgressStatus(entry),
       })),
-    [entries],
+    [rangeEntries],
   );
   const completedCount = displayedEntries.filter((entry) => entry.status === "completed").length;
   const pendingCount = displayedEntries.filter((entry) => entry.status === "pending").length;
   const missedCount = displayedEntries.filter((entry) => entry.status === "missed").length;
-  const totalXp = entries
+  const totalXp = rangeEntries
     .filter((entry) => entry.status === "completed")
     .reduce((total, entry) => total + entry.quest.xpReward, 0);
 
@@ -463,16 +493,47 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
     >
       <div className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
       <div className="relative z-10">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-orange-500/30 bg-orange-500/10 text-orange-300">
               <Activity size={22} />
             </div>
             <div>
               <h2 className="text-xl font-bold text-white sm:text-2xl">Quest activity</h2>
-              <p className="text-xs text-neutral-400">{entries.length} quest logs · all time</p>
+              <p className="text-xs text-neutral-400">{rangeEntries.length} quest logs · {rangeLabel}</p>
             </div>
           </div>
+          {entries.length > 0 && (
+            <div
+              aria-label="Activity date range"
+              className="flex rounded-xl border border-neutral-800 bg-neutral-950/70 p-1"
+              role="group"
+            >
+              {([
+                ["7d", "7 days"],
+                ["30d", "30 days"],
+                ["all", "All time"],
+              ] as const).map(([range, label]) => (
+                <button
+                  key={range}
+                  type="button"
+                  aria-pressed={selectedRange === range}
+                  onClick={() => {
+                    setSelectedRange(range);
+                    setSelectedCategory("all");
+                    setSelectedPoint(null);
+                  }}
+                  className={`min-h-9 rounded-lg px-2.5 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs ${
+                    selectedRange === range
+                      ? "bg-orange-500/20 text-orange-200"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             <div className="rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-orange-300">Completed</p>
@@ -504,6 +565,10 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
           <div className="flex min-h-56 items-center justify-center rounded-2xl border border-neutral-800 bg-neutral-900/50 text-sm text-neutral-400">
             No quest activity yet.
           </div>
+        ) : rangeEntries.length === 0 ? (
+          <div className="flex min-h-56 items-center justify-center rounded-2xl border border-neutral-800 bg-neutral-900/50 text-center text-sm text-neutral-400">
+            No quest activity in the {rangeLabel}.
+          </div>
         ) : (
           <>
             <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -523,11 +588,11 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
                 }`}
               >
                 <span className="block text-xs font-semibold">All activity</span>
-                <span className="mt-1 block text-lg font-black">{entries.length}</span>
+                <span className="mt-1 block text-lg font-black">{rangeEntries.length}</span>
               </motion.button>
               {categories.map((category) => {
                 const colors = getCategoryColors(category);
-                const count = entries.filter((entry) => categoryKey(entry.quest.category) === category).length;
+                const count = rangeEntries.filter((entry) => categoryKey(entry.quest.category) === category).length;
                 return (
                   <motion.button
                     key={category}

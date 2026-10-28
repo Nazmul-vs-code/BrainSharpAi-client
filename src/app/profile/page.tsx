@@ -16,7 +16,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import ActivityGraph from "@/components/profile/ActivityGraph";
 
 export default function ProfilePage() {
   const { data: session, isPending, refetch } = useSession();
@@ -385,7 +384,6 @@ export default function ProfilePage() {
             </div>
           </section>
         </div>
-        <ActivityGraph session={session} />
         {/* <footer className="mt-8 border-t pt-6 text-sm opacity-60">
           BrainSharp AI
         </footer> */}

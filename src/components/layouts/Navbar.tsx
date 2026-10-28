@@ -14,6 +14,7 @@ import {
   Info,
   Menu,
   Trophy,
+  Activity,
   X,
   User,
   Settings,
@@ -29,6 +30,7 @@ const navigation = [
   { label: "Home", href: "/", icon: House },
   { label: "BrainSharp AI", href: "/brainsharp-ai", icon: Sparkles },
   { label: "The Quest", href: "/quest", icon: BrainCircuit },
+  { label: "Activity", href: "/activity", icon: Activity },
   { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { label: "About", href: "/about", icon: Info },
 ];

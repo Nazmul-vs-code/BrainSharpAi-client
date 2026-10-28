@@ -305,8 +305,8 @@ export default function QuestPage() {
   ).length;
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-black px-4 py-8 text-slate-100 sm:px-6 sm:py-12 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-10">
+    <main className="relative isolate min-h-screen overflow-hidden bg-black px-4 py-5 text-slate-100 sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6 sm:space-y-10">
         {userProfile && (
           <QuestHeader
             level={userProfile.level}
@@ -333,9 +333,9 @@ export default function QuestPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3 sm:mb-6 sm:gap-4">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-orange-300">
+              <div className="mb-2 hidden items-center gap-2 text-orange-300 sm:flex">
                 <Sparkles aria-hidden="true" className="size-4" />
                 <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
                   Your next small win

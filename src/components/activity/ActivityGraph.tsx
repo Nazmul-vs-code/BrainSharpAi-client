@@ -10,7 +10,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Modal, useOverlayState } from "@heroui/react";
 import {
   Activity,
   AlertTriangle,
@@ -19,10 +18,10 @@ import {
   Flame,
   Loader2,
   Trophy,
-  X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { FetchData } from "@/lib/api/FetchData";
+import ActivityDataModal from "@/components/activity/Activity-data-modal";
 import {
   getQuestProgressStatus,
   type QuestProgressStatus,
@@ -212,127 +211,6 @@ function ActivityChartDot({
         pointerEvents="none"
       />
     </g>
-  );
-}
-
-interface ActivityDetailsModalProps {
-  point: ActivityPoint;
-  selectedCategory: string;
-  onClose: () => void;
-}
-
-function ActivityDetailsModal({
-  point,
-  selectedCategory,
-  onClose,
-}: ActivityDetailsModalProps) {
-  const modalState = useOverlayState({
-    isOpen: true,
-    onOpenChange: (isOpen) => {
-      if (!isOpen) onClose();
-    },
-  });
-  const activityEntries = point.entries.filter(
-    (entry) =>
-      selectedCategory === "all" ||
-      categoryKey(entry.quest.category) === selectedCategory,
-  );
-
-  return (
-    <Modal state={modalState}>
-      <Modal.Backdrop
-        isDismissable
-        className="bg-black/80 p-3 backdrop-blur-sm sm:p-4"
-      >
-        <Modal.Container
-          placement="center"
-          scroll="inside"
-          size="lg"
-          className="max-h-[90dvh] w-full p-2 sm:p-4"
-        >
-          <Modal.Dialog className="w-full max-w-lg overflow-hidden rounded-3xl border border-orange-500/25 bg-neutral-950/95 text-white shadow-[0_24px_80px_rgba(0,0,0,0.75),0_0_32px_rgba(249,115,22,0.12)] backdrop-blur-2xl">
-            <Modal.Header className="flex items-start justify-between gap-4 border-b border-neutral-800 p-5 sm:p-6">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-300">
-                  Activity details
-                </p>
-                <Modal.Heading className="mt-1 text-xl font-bold text-white">
-                  {formatDate(point.date)}
-                </Modal.Heading>
-                <p className="mt-1 text-xs text-neutral-400">
-                  {activityEntries.length} {activityEntries.length === 1 ? "quest" : "quests"} assigned
-                </p>
-              </div>
-              <Modal.CloseTrigger
-                aria-label="Close activity details"
-                className="rounded-xl border border-neutral-700 bg-neutral-900 p-2 text-neutral-300 transition-colors hover:border-orange-400/50 hover:bg-orange-500/10 hover:text-white"
-              >
-                <X aria-hidden="true" className="size-4" />
-              </Modal.CloseTrigger>
-            </Modal.Header>
-            <Modal.Body className="max-h-[65dvh] space-y-3 overflow-y-auto p-5 sm:p-6">
-              {activityEntries.map((entry) => {
-                const status = entry.status;
-                const statusStyles: Record<QuestProgressStatus, string> = {
-                  completed: "border-orange-500/25 bg-orange-500/10 text-orange-300",
-                  pending: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
-                  missed: "border-red-500/30 bg-red-500/10 text-red-300",
-                };
-                const statusLabel =
-                  status === "completed"
-                    ? "Completed"
-                    : status === "missed"
-                      ? "Missed"
-                      : "Pending";
-
-                return (
-                  <article
-                    key={entry.id}
-                    className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-4"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <h3 className="min-w-0 flex-1 text-sm font-semibold text-white">
-                        {entry.quest.title}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusStyles[status]}`}
-                      >
-                        {status === "completed" ? (
-                          <Check size={12} />
-                        ) : status === "missed" ? (
-                          <AlertTriangle size={12} />
-                        ) : (
-                          <Clock3 size={12} />
-                        )}
-                        {statusLabel}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs leading-relaxed text-neutral-400">
-                      {entry.quest.description}
-                    </p>
-                    {status === "missed" && (
-                      <p className="mt-2 text-xs font-medium text-red-300">
-                        This quest was not completed by the end of its assigned day.
-                      </p>
-                    )}
-                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-neutral-800 pt-3 text-[11px] text-neutral-300">
-                      <span>Assigned {formatDate(entry.assignedDate)}</span>
-                      {entry.completedDate && (
-                        <span>Completed {formatDate(entry.completedDate)}</span>
-                      )}
-                      <span>{entry.quest.durationMinutes} min</span>
-                      <span className="font-semibold text-amber-300">
-                        {entry.quest.xpReward} XP
-                      </span>
-                    </div>
-                  </article>
-                );
-              })}
-            </Modal.Body>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
   );
 }
 
@@ -709,7 +587,7 @@ export default function ActivityGraph({ session }: ActivityGraphProps) {
               </ResponsiveContainer>
             </div>
             {selectedPoint && (
-              <ActivityDetailsModal
+              <ActivityDataModal
                 point={selectedPoint}
                 selectedCategory={selectedCategory}
                 onClose={() => setSelectedPoint(null)}

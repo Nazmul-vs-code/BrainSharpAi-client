@@ -41,16 +41,18 @@ export default function AICoachCard({ userId }: AICoachCardProps) {
         }),
       });
 
-      // Handle response structure depending on your requestApi wrapper return type
-      const data = res?.data;
-      if (data?.coachingAdvice) {
-        setAdvice(data.coachingAdvice);
-      } else {
-        setAdvice("Could not retrieve coaching brief right now. Please try again!");
+      if (res.error) throw new Error(res.error);
+      if (!res.data?.coachingAdvice?.trim()) {
+        throw new Error("The AI coach returned an empty response.");
       }
+
+      setAdvice(res.data.coachingAdvice);
     } catch (err) {
       console.error("AI Coach Fetch Error:", err);
-      setAdvice("⚠️ Server connection failed or timed out. Please try again shortly.");
+      const message = err instanceof Error
+        ? err.message
+        : "Server connection failed or timed out. Please try again shortly.";
+      setAdvice(`⚠️ ${message}`);
     } finally {
       setLoading(false);
       setUserQuery("");

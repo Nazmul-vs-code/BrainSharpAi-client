@@ -4,10 +4,40 @@ import AICoachSection from "@/components/ai/AICoachSection";
 import { Bot, Sparkles, Brain, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Spinner } from "@heroui/react";
+import { useSession } from "@/lib/auth-client";
 
 export default function BrainSharpAIPage() {
-  // Replace with your dynamic session/auth user ID from Better-Auth
-  const currentUserId = "pscnKTJV2QpFL1eXFkXnCS2BM5LlHQsG";
+  const { data: session, isPending } = useSession();
+  const currentUserId = session?.user?.id;
+
+  if (isPending) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <Spinner aria-label="Loading session" />
+      </main>
+    );
+  }
+
+  if (!currentUserId) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center px-4 py-12 text-white">
+        <section className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center shadow-2xl">
+          <Bot aria-hidden="true" className="mx-auto size-9 text-orange-300" />
+          <h1 className="mt-4 text-2xl font-semibold">BrainSharp AI Coach</h1>
+          <p className="mt-2 text-sm leading-6 text-neutral-400">
+            Sign in to get personalized coaching based on your quest activity.
+          </p>
+          <Link
+            href="/login"
+            className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black"
+          >
+            Sign in
+          </Link>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white relative overflow-hidden selection:bg-orange-500 selection:text-white">
@@ -33,7 +63,7 @@ export default function BrainSharpAIPage() {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
             </span>
             <span className="text-xs font-bold text-neutral-300 uppercase tracking-widest">
-              Live RAG Service Connected
+              AI Coach Service
             </span>
           </div>
         </div>
@@ -47,7 +77,7 @@ export default function BrainSharpAIPage() {
         >
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-400">
             <Sparkles size={14} />
-            <span>RAG-Powered AI Engine</span>
+            {/* <span>RAG-Powered AI Engine</span> */}
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
             BrainSharp <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">AI Mentor</span>

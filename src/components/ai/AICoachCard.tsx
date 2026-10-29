@@ -4,15 +4,22 @@ import { useState, type FormEvent } from "react";
 import { Bot, Loader2, Send, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button, Card, Input, TextField } from "@heroui/react";
-import { requestApi } from "@/lib/api/request";
 
 interface AICoachCardProps {
   userId: string;
 }
 
 interface CoachResponse {
-  coachingAdvice?: string;
+  status?: boolean;
+  data?: {
+    coachingAdvice?: string;
+  };
+  message?: string;
+  error?: string;
 }
+
+const MAX_MESSAGE_LENGTH = 2000;
+const COACH_TIMEOUT_MS = 30000;
 
 export default function AICoachCard({ userId }: AICoachCardProps) {
   const [advice, setAdvice] = useState<string>(
@@ -23,36 +30,85 @@ export default function AICoachCard({ userId }: AICoachCardProps) {
   const [lastQuestion, setLastQuestion] = useState<string | null>(null);
 
   const fetchCoaching = async (customMessage?: string) => {
-    if (!userId) return;
+    if (!userId || loading) return;
+
+    const message = (customMessage ?? userQuery).trim();
+
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      setAdvice(`⚠️ Your question must be ${MAX_MESSAGE_LENGTH} characters or fewer.`);
+      return;
+    }
+
     setLoading(true);
-    setLastQuestion(customMessage?.trim() || null);
+    setLastQuestion(message || null);
 
     try {
-      // Use requestApi directly for POST requests with a JSON body
-      const res = await requestApi<CoachResponse>("/api/ai/coach", {
+      const backendBaseUrl = process.env.NEXT_PUBLIC_SERVER_URL;
+      if (!backendBaseUrl) {
+        throw new Error("The AI coach backend is not configured.");
+      }
+
+      const url = `${backendBaseUrl.replace(/\/+$/, "")}/api/ai/coach`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), COACH_TIMEOUT_MS);
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "accept": "application/json",
+          "Accept": "application/json",
         },
         body: JSON.stringify({
           userId,
-          message: customMessage || "",
+          message,
         }),
+        signal: controller.signal,
+        cache: "no-store",
       });
 
-      if (res.error) throw new Error(res.error);
-      if (!res.data?.coachingAdvice?.trim()) {
+      clearTimeout(timeoutId);
+
+      let payload: CoachResponse | null = null;
+      const responseText = await response.text();
+      if (responseText) {
+        try {
+          payload = JSON.parse(responseText) as CoachResponse;
+        } catch {
+          payload = null;
+        }
+      }
+
+      if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error(
+            payload?.message || payload?.error || "Your question is invalid. Please shorten it and try again."
+          );
+        }
+
+        if (response.status === 504) {
+          throw new Error("The AI coach request timed out. Please try again.");
+        }
+
+        throw new Error("The AI coach is temporarily unavailable. Please try again shortly.");
+      }
+
+      const coachingAdvice = payload?.data?.coachingAdvice?.trim();
+      if (!coachingAdvice) {
         throw new Error("The AI coach returned an empty response.");
       }
 
-      setAdvice(res.data.coachingAdvice);
+      setAdvice(coachingAdvice);
     } catch (err) {
       console.error("AI Coach Fetch Error:", err);
-      const message = err instanceof Error
-        ? err.message
-        : "Server connection failed or timed out. Please try again shortly.";
-      setAdvice(`⚠️ ${message}`);
+
+      if (err instanceof Error && err.name === "AbortError") {
+        setAdvice("⚠️ The AI coach request timed out after 30 seconds. Please try again.");
+      } else {
+        const message = err instanceof Error
+          ? err.message
+          : "The AI coach is temporarily unavailable. Please try again shortly.";
+        setAdvice(`⚠️ ${message}`);
+      }
     } finally {
       setLoading(false);
       setUserQuery("");
@@ -156,8 +212,9 @@ export default function AICoachCard({ userId }: AICoachCardProps) {
               <Input
                 aria-label="Message the AI coach"
                 value={userQuery}
-                onChange={(event) => setUserQuery(event.target.value)}
+                onChange={(event) => setUserQuery(event.target.value.slice(0, MAX_MESSAGE_LENGTH))}
                 placeholder="Message your coach..."
+                maxLength={MAX_MESSAGE_LENGTH}
                 className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-500 focus:border-orange-500"
               />
             </TextField>

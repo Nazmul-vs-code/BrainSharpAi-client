@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Google_Sans, Orbitron } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layouts/Navbar";
+import Footer from "@/components/layouts/Footer";
 import MobileNav from "@/components/layouts/MobileNav";
 import { SoundProvider } from "@/components/providers/SoundProvider";
 
@@ -35,7 +36,7 @@ export default function RootLayout({
       data-theme="dark"
       className={`${googleSans.variable} ${orbitron.variable} h-full antialiased`}
     >
-      <body className="flex min-h-screen flex-col bg-[#050507] font-sans text-zinc-100">
+      <body id="top" className="flex min-h-screen flex-col bg-[#050507] font-sans text-zinc-100">
         <Toaster
           position="top-center"
           reverseOrder={false}
@@ -44,6 +45,7 @@ export default function RootLayout({
         <SoundProvider>
           <Navbar />
           <main className="flex-1 pb-24 md:pb-0">{children}</main>
+          <Footer />
           <MobileNav />
         </SoundProvider>
       </body>
